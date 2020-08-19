@@ -1,0 +1,12 @@
+celery
+lxml
+requests
+psycopg2
+beautifulsoup4
+bcrypt
+logger
+paramiko
+sshtunnel
+fake-useragent
+py7zr
+python-dotenv
