@@ -10,7 +10,7 @@ import atexit
 from signal import *
 
 from .crawler import *
-from . import URLDownloader
+from . import URLDownloader, VCSDownloader, md5hasher
 from . import project_tasks, download_tasks
 
 class LGCrawler(Crawler):
@@ -60,8 +60,8 @@ class LGCrawler(Crawler):
         initialPath = os.getcwd()
 
         # LG 카테고리 크롤링에 사용할 전체 카테고리 7개)
-        category_list = ["AV/Car/Security", "Appliances", "Commercial",
-                         "Computer Product", "Mobile", "TV/Display", "ETC"]
+        category_list = ["Mc011", "Mc014", "Mc024",
+                         "Mc020", "Mc001", "Mc005", "Mc111"]
 
         try:
             DataBase_Crawler_DB(
@@ -105,7 +105,7 @@ class LGCrawler(Crawler):
         # 페이지 1부터 PAGE_SEARCH_LIMIT까지 스크래핑.
         while page <= PAGE_SEARCH_LIMIT:
             self.LAST_SEARCH_PAGE = page
-            result = self.crawling_onepage(url + str(page), initialPath)
+            result = self.crawling_onepage(url, initialPath)
 
             # Category Find Terminate Condition check.
             if result == 0:
@@ -129,23 +129,22 @@ class LGCrawler(Crawler):
         soup = BeautifulSoup(response.text, 'lxml')  # 성능 향상을 위해 lxml 파서 사용.
 
         # HTTP OK(200)이지만 내용이 없는 경우(No results found) 종료
+        # Model List와 Software List 둘다 크롤링 해야함. 이 코드는 하나만 긁어오는 형태. 즉 하나 더 생성해야함.
         checkNoResult = soup.find('section', {'class': "list-type-01"})
 
         if checkNoResult is None:
             raise requests.ConnectionError
 
-        """!!!!!!수정해야함!!!!!!"""
-        result = checkNoResult.find('section', {'class': ""})
-        """!!!!!!수정해야함!!!!!!"""
+        result = checkNoResult.find('section', {'class': "description"})
         if result is not None and "No results found" in result.text:
             return 0
 
         # 프로젝트 리스트 탐색
         prev_index = int(self.LAST_PROJECT_NUMBER)
         current_index = 0
-        classList = soup.findAll('div', {'class': ""})
+        classList = soup.find_all('div[id*="modelRow"]')
         for classItem in classList:
-            hrefList = classItem.findAll('a')
+            hrefList = classItem.findAll('td')
             for href in hrefList:
                 current_index += 1
                 # 기탐색된 프로젝트 스킵
@@ -156,8 +155,10 @@ class LGCrawler(Crawler):
                 # 프로젝트 기본정보 취득
                 href_value = href.get('href')
                 # self.printdetail(href_value, initialPath)
-                project_tasks.get_project_info_from_sourceforge.delay(href_value, initialPath)
-
+                #project_tasks.get_project_info_from_sourceforge.delay(href_value, initialPath)
+                '''
+                이 부분에 파싱처리 코드를 넣을지 말지 생각해봐야함.
+                '''
                 print("---------------------------------------------------------------")
 
         self.LAST_PROJECT_NUMBER = 0
@@ -176,9 +177,9 @@ class LGCrawler(Crawler):
         response = requests.get(infoAddress)
         html = response.text
         soup = BeautifulSoup(html, 'lxml')
-        """!!!!!!수정해야함!!!!!!"""
+
         status = soup.find('div', {'class': ""})
-        """!!!!!!수정해야함!!!!!!"""
+
 
         # status가 존재하면 Realease가 아닌 것으로 판단. Realease가 아니면 볼 필요 없으니 종료.
         if status is not None:
