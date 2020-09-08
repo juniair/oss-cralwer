@@ -27,9 +27,9 @@ def parsingWebpage(URL):
 def crawling_list(soup, mode):
     print(mode + " List 다운 시작.")
     if(mode == "Model"):
-        list = soup.find_all(id=re.compile(r'(modelRow([0-9])+)'))  # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
+        list = soup.find_all(id=re.compile(r'(modelRow([0-9])+)'))      # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
     elif (mode == "Software"):
-        list = soup.find_all(id=re.compile(r'(softwareRow([0-9])+)'))  # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
+        list = soup.find_all(id=re.compile(r'(softwareRow([0-9])+)'))   # 각 프로젝트는 id가 softwareRow로 시작해서 id 정규식으로 검색.
     else:
         print("모드 오류!")
         exit()
