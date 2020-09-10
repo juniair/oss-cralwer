@@ -1,5 +1,6 @@
+from celery import Celery
 import urllib.request
-import requests          #위에꺼랑 다름..
+import requests #위에꺼랑 다름..
 import re
 from bs4 import BeautifulSoup
 
@@ -25,22 +26,21 @@ def parsingWebpage(URL):
     return soup
 
 #URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
-def download(url, file_name):
-    with open(file_name, "wb") as file:
+def downloadFile(url, file_name):
+    with open(file_name, "wb") as file:     
         response = requests.post(url)
         file.write(response.content)
 
-#URL = "http://opensource.lge.com/fileMgr/download/li/ACAH020HDT2/507162"
-#download(URL, "temp_TEST.html")
-
+URL = "http://opensource.lge.com/fileMgr/download/li/GC-B569BLCF/509519"
+downloadFile(URL, "down_TEST.html")
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
 def crawling_list(soup, mode):
     print(mode + " List 다운 시작.")
     if(mode == "Model"):
-        list = soup.find_all(id=re.compile(r'(modelRow([0-9])+)'))  # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
+        list = soup.find_all(id=re.compile(r'(modelRow([0-9])+)'))      # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
     elif (mode == "Software"):
-        list = soup.find_all(id=re.compile(r'(softwareRow([0-9])+)'))  # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
+        list = soup.find_all(id=re.compile(r'(softwareRow([0-9])+)'))   # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
     else:
         print("모드 오류!")
         exit()
@@ -49,7 +49,7 @@ def crawling_list(soup, mode):
         filedown_tagged = i.find_all(class_='filedown')     #라이선스와 소스코드 둘다 filedown이라는 클래스가 담긴 버튼을 통해서 다운 받는다.
 
         for j in filedown_tagged:
-            fileName = j.find('img')['alt']                #파일명 추출
+            fileName = j.find('img')['alt']                 #파일명 추출
 
             # onclick의 요소들을 정제하고 linkParam에 담는 과정.
             downloadLink = baseURL + "/fileMgr/download"    # 파일을 다운로드할 때, 이 링크와 onclick값들 중 일부를 합쳐서 다운로드 링크를 생성함.
@@ -64,7 +64,7 @@ def crawling_list(soup, mode):
                 downloadLink = downloadLink + "/" + k
             print(downloadLink)
             print("파일명: " + fileName + "\n")
-            #download(downloadLink, fileName)
+            #downloadFile(downloadLink, fileName)            #시스템 구축 안하고 돌리면 LG오픈소스 사이트에서 차단 먹이는 코드.
     print(mode + " List 다운 완료.")
 
 def LG_Crawling_Start():

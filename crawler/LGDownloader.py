@@ -1,20 +1,3 @@
-'''
-ZIP말고도 다른 압축 확장자도 지원한다.
-os.remove는 나중에.
-압축파일 패턴
-ZIP ┬─폴더 ─폴더 ┬tar.xz
-    │           ├tar.gz
-    │           ├zip
-    │           ├jar
-    ├─폴더 ┬tar.bz2
-    │      ├tar.gz
-    │      ├tar.gz
-    │      ├tgz
-    └tar.gz
-경로는 재귀로 돌린다.
-처리해야할 확장자 목록: 폴더(완료), zip(완료), tar.gz, tar.bz2, tar
-혹시 모르니 bz도 풀게 만들자.
-'''
 import sys
 import os
 import gzip
@@ -29,7 +12,6 @@ def extract_file(name, current_directory):
         os.mkdir(current_directory)
     except FileExistsError:
         pass
-    result = True
     if filename.endswith('.tar') or filename.endswith('.tar.xz') or filename.endswith('.tar.gz') or filename.endswith('.tgz'):
         with tarfile.open(filename) as tar:
             tar.extractall(current_directory)
@@ -40,8 +22,7 @@ def extract_file(name, current_directory):
         with py7zr.SevenZipFile(filename, mode="r") as z:
             z.extractall(current_directory)
     else:
-        result = False
-    return result
+        pass
 
 def flatten(target_file):
     if os.path.basename(target_file)[0]==".":
