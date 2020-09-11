@@ -28,7 +28,6 @@ def extract_file(name, current_directory):
     else:
         pass
 
-
 def flatten(target_file):
     if os.path.basename(target_file)[0]==".":
         return
@@ -38,7 +37,7 @@ def flatten(target_file):
         print("이런 파일을 찾았어요. : \t\t\t\t\t\t\t\t\t\t" + target_file)
 
         pureFileName = os.path.splitext(os.path.basename(target_file))[0]  # 파일 이름 가져오기
-        unzip_dir = f"{os.path.abspath(os.path.dirname(target_file))}" + os.path.sep + pureFileName # 파일 경로에다 파일 이름으로 압축 풀기
+        unzip_dir = f"{os.path.abspath(os.path.dirname(target_file))}" + os.sep + pureFileName # 파일 경로에다 파일 이름으로 압축 풀기
         print("압축 풀 곳은 여기. : \t\t\t\t\t\t\t\t\t\t\t" + unzip_dir)
 
         if any(map(lambda x: target_file.endswith(x), compressedList)):
@@ -53,6 +52,4 @@ def flatten(target_file):
         print(os.listdir(target_file))
 
         for i in os.listdir(target_file):
-           flatten(root_dir + os.path.sep + i)
-
-flatten(home + "\\Downloads\\HR5xx_HR6xx_OpenSource_V2.0.zip")
+           flatten(root_dir + os.sep + i)
