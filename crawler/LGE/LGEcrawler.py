@@ -1,4 +1,6 @@
-from celery import Celery
+# opensource.lge.com 사이트에서 크롤링해주는 프로그램.
+# 카테고리 7와, Model List의 모든 페이지와, Software List의 라이선스와 소스를 받음.
+
 import urllib.request
 import requests #위에꺼랑 다름..
 import re
@@ -30,9 +32,6 @@ def downloadFile(url, file_name):
     with open(file_name, "wb") as file:     
         response = requests.post(url)
         file.write(response.content)
-
-URL = "http://opensource.lge.com/fileMgr/download/li/GC-B569BLCF/509519"
-downloadFile(URL, "down_TEST.html")
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
 def crawling_list(soup, mode):

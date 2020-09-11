@@ -1,3 +1,6 @@
+#폴더를 재귀로 돌면서, 압축해제시켜주는 프로그램.
+#지원 확장자는 compressedList 배열 참조.
+
 import sys
 import os
 import gzip
@@ -6,6 +9,7 @@ import zipfile, tarfile, py7zr
 home = os.path.expanduser("~")  # 홈 경로
 sys.setrecursionlimit(10**6)
 
+#common.py의 동명 함수를 가져옴. 단, 압축해제 경로를 current_directory로 지정함.
 def extract_file(name, current_directory):
     filename = os.path.join(current_directory, name)
     try:
@@ -23,6 +27,7 @@ def extract_file(name, current_directory):
             z.extractall(current_directory)
     else:
         pass
+
 
 def flatten(target_file):
     if os.path.basename(target_file)[0]==".":
