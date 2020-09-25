@@ -7,6 +7,8 @@ from crawler.Decompresser import flatten
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Apple_Crawling"
 baseURL = "https://opensource.apple.com/"
 
+isExist = []
+
 def parsingWebpage(URL):
     WebpageURL = URL
     html = urllib.request.urlopen(WebpageURL).read()
@@ -47,6 +49,14 @@ def one_versionCrawl(URL, filePath):
 
         print("\t\t\t\t" + fileName)
         print("\t\t\t\t" + fileURL)
+
+        if fileName not in isExist:
+            isExist.append(fileName)
+            print("\t\t\t파일이 없네요")
+        else:
+            print("\t\t\t파일이 이미 있네요.")
+            continue
+
         downloadFile(fileURL, fileName+".tag.gz", filePath)
 
 #홈페이지에서 버전별로 받는 코드.
@@ -58,14 +68,12 @@ def apple_start_crawling():
         print("\n제품 명: " + product_name)
         filePath.append(product_name)
 
-
         for j in i.select(".release-list-button > span, ul"):
             tagIdentify = j.get('id').split("-")[0]                 #버전과 하위 버전을 구분하기 위한 id 추출.
             count = 0
             if tagIdentify == "list":
                 print("\t\t버전 명:", j.text + "\n\t\t▼하위 태그들▼")
                 filePath.append(j.text)
-
 
             elif tagIdentify == "release":
                 count = count + 1
@@ -89,7 +97,7 @@ if __name__ == "__main__":
     except FileExistsError:
         pass
     apple_start_crawling()
-    #flatten(BaseFolderDirectory)
+    flatten(BaseFolderDirectory)
 
 
 '''
