@@ -29,13 +29,12 @@ def initialcategoryURL(pageNum=1, categoryName=category_dic["Mc011"]):
 #lxml로 하려했더니 안되서 일단 html.parser로 작업.
 def parsingWebpage(URL):
     WebpageURL = URL
-    req = urllib.request.Request(WebpageURL, headers=hdr)
     html = urllib.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
-@app.task(autoretry_for=(Exception,))
+#@app.task(autoretry_for=(Exception,))
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
@@ -44,7 +43,7 @@ def downloadFile(url, file_name, path):
             os.mkdir(i)
         except FileExistsError:
             pass
-        savePath =  savePath + os.sep + i
+        savePath = savePath + os.sep + i
         os.chdir(savePath)
     print("현재 경로는: {}".format(os.getcwd()))
 
@@ -109,7 +108,7 @@ def LG_Crawling_Start():
             isEndPage = currentPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
 
             if (isEndPage[0].text == "No results"):
-                print("다음 카테고리로!\n")
+                print("다음 카테고리로\n")
                 break
 
             crawling_list(currentPageSoup, "Model")                             #모델 리스트 긁기
