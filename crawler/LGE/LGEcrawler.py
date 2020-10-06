@@ -105,7 +105,7 @@ def LG_Crawling_Start():
         while(1):
             #매번 다음 페이지 파싱.
             currentPageSoup = parsingWebpage(initialcategoryURL(currentPageNum, category))
-            isEndPage = currentPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
+            isEndPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
 
             if (isEndPage[0].text == "No results"):
                 print("다음 카테고리로\n")
