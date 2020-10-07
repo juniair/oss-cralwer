@@ -2,7 +2,6 @@ import urllib.request
 import requests
 from bs4 import BeautifulSoup
 
-
 baseURL = "http://joomlacode.org"
 projectLink = ""
 finalL = 0
@@ -21,8 +20,23 @@ def parsingWebpage(URL):
     return soup
 
 def projectDownload(URL):
+    URL = "http://joomlacode.org/gf/project/xegallm/frs/"
     soup = parsingWebpage(URL)
+    
+    #파일에 문제 있는 것들 걸러내기
+    for i in soup.select(".main"):
+        if (i.text.strip()[:7] == "Unknown"):
+            print("파일 메뉴가 없네요.")
+        else:
+            MenuList = i.text.split("\n")
+            print(MenuList)
 
+        if (lambda x: x == True, list(map(lambda x: x == 'No Packages Were Found', MenuList))):
+            print("발견된 패키지가 없어요.")
+            break
+
+        # elif (i.text[:2] == "No"):
+        #     print("발견된 패키지가 없네요.")
 
 
 def proejectScrapping(URL):
@@ -44,9 +58,7 @@ def proejectScrapping(URL):
                         finalP+=1
             except IndexError:
                 pass
-    for i in soup.select(".menuitem.regular"):
-        if(i.text == "Releases"):
-            projectDownload(baseURL + i['href'])
+    projectDownload(URL + "frs")
 
 def one_page_crawling(soup):
     count = 0
@@ -74,12 +86,12 @@ def joomla_crawling_start():
         currentPage = currentPageSoup.select('.paginator > strong')[1].text  # 현재 페이지.
         if currentPage[0] == " ":
             print("\n크롤링 종료")
+            print("마지막에 있던 횟수\n L: {} P: {}".format(finalL, finalP))
             return
 
         print("현재 페이지: {}".format(currentPage))
         print("다음 페이지로.\n")
         currentPageNum += 1
-    print("마지막에 있던 횟수\n L: {} P: {]".format(finalL, finalP))
 
 if __name__ == "__main__":
     '''
