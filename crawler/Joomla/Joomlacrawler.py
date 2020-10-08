@@ -4,8 +4,6 @@ from bs4 import BeautifulSoup
 
 baseURL = "http://joomlacode.org"
 projectLink = ""
-finalL = 0
-finalP = 0
 
 #URL 초기화 함수.
 def initialcategoryURL(pageNum):
@@ -19,29 +17,42 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
-def projectDownload(URL):
-    URL = "http://joomlacode.org/gf/project/xegallm/frs/"
-    soup = parsingWebpage(URL)
-    
-    #파일에 문제 있는 것들 걸러내기
+#다운로드 할 파일이 있는지 검출해주는 함수
+def proejctDetect(soup):
+    packageDetect = lambda x: x == 'No Packages Were Found'
+    availableFileDetect = lambda x: x[-41:] == 'No available files found for this package'
+
     for i in soup.select(".main"):
+        #print(i)
         if (i.text.strip()[:7] == "Unknown"):
-            print("파일 메뉴가 없네요.")
+            print("\t\t\t\t====>파일 메뉴가 없네요.<====\t\t\t\t")
+            return False
         else:
             MenuList = i.text.split("\n")
             print(MenuList)
 
-        if (lambda x: x == True, list(map(lambda x: x == 'No Packages Were Found', MenuList))):
-            print("발견된 패키지가 없어요.")
-            break
+        if (True in list(map(packageDetect, MenuList))):
+            print(list(map(packageDetect, MenuList)))
+            print("\t\t\t\t====>발견된 패키지가 없어요.<====\t\t\t\t")
+            return False
+        elif (True in list(map(availableFileDetect, MenuList))):
+            print(list(map(availableFileDetect, MenuList)))
+            print("\t\t\t\t====>다운로드할 파일이 없어요.<====\t\t\t\t")
+            return False
+    return True
 
-        # elif (i.text[:2] == "No"):
-        #     print("발견된 패키지가 없네요.")
+def projectDownload(URL):
+    soup = parsingWebpage(URL)
+
+    #파일에 문제 있는 것들 걸러내기
+    if proejctDetect(soup) is False:
+        print("반출!!")
+        return
+
+    
 
 
 def proejectScrapping(URL):
-    global finalL
-    global finalP
     soup = parsingWebpage(URL)
     for i in soup.select(".tabular > .d > td > ul"):
         infoList = i.text.split("\n")
@@ -49,13 +60,10 @@ def proejectScrapping(URL):
             try:
                 if j[0] == "L":
                     print("=====\n라이선스: ", j[9:])
-                    if j is soup.select(".tabular > .d > td > ul")[-1]:
-                        finalL+=1
 
                 elif j[0] == "P":
                     print("프로그래밍 언어 ", j[22:] + "\n")
-                    if j is soup.select(".tabular > .d > td > ul")[-1]:
-                        finalP+=1
+
             except IndexError:
                 pass
     projectDownload(URL + "frs")
@@ -86,7 +94,6 @@ def joomla_crawling_start():
         currentPage = currentPageSoup.select('.paginator > strong')[1].text  # 현재 페이지.
         if currentPage[0] == " ":
             print("\n크롤링 종료")
-            print("마지막에 있던 횟수\n L: {} P: {}".format(finalL, finalP))
             return
 
         print("현재 페이지: {}".format(currentPage))
