@@ -1,4 +1,6 @@
-import urllib.request
+# -*- coding: utf-8 -*-
+
+import urllib3.request
 import requests
 import os, time
 from bs4 import BeautifulSoup
@@ -11,7 +13,7 @@ isExist = []
 
 def parsingWebpage(URL):
     WebpageURL = URL
-    html = urllib.request.urlopen(WebpageURL).read()
+    html = urllib3.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
@@ -35,7 +37,7 @@ def downloadFile(url, file_name, path):
 def one_versionCrawl(URL, filePath):
     try:
         soup = parsingWebpage(URL)
-    except urllib.error.HTTPError:
+    except urllib3.error.HTTPError:
         print("\t\t\t\t해당 페이지는 웹페이지 오류로 인해 접속이 불가능합니다.")
         return
 
@@ -98,50 +100,3 @@ if __name__ == "__main__":
         pass
     apple_start_crawling()
     flatten(BaseFolderDirectory)
-
-
-'''
-def apple_start_crawling(URL, path):
-    soup = parsingWebpage(URL)
-
-    for i in soup.select('.column'):
-        toggle = 0
-
-        fileList = i.select('tr > td > a')
-        for j in fileList:
-            if (j['href'] in ["./.." ,"./../"]):          #상위 폴더로 이동 생략.
-                continue
-
-            if toggle == 0:                     #2개씩 들어가있어서 짝수번째만 작동
-                toggle = 1
-                continue
-            else:
-                toggle = 0
-                pass
-
-            URL = baseURL
-            for k in path:
-                URL = URL + k
-
-            filename = j.text
-            print("파일이름: ", filename)
-
-            path.append(filename)
-            URL = URL + filename
-
-
-            print("URL: ", URL)
-            print(path)
-
-            if filename[-7:-1] == ".tar.g":
-                print("아무튼 다운로드함\n")
-                #downloadFile(URL, filename)
-                del path[-1]
-
-            if j is fileList[-1]:
-                del path[-1]
-                apple_start_crawling(URL, path)
-
-            else:
-                apple_start_crawling(URL, path)
-'''

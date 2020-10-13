@@ -1,12 +1,14 @@
+# -*- coding: utf-8 -*-
+
 # opensource.lge.com 사이트에서 크롤링해주는 프로그램.
 # 카테고리 7와, Model List의 모든 페이지와, Software List의 라이선스와 소스를 받음. 한번에 6개까지 다운로드 가능.
-
-import urllib.request
+import sys
+import urllib3.request
 import requests
 import re, os, shutil
 from bs4 import BeautifulSoup
-from crawler.LGE.Decompresser import flatten
-from crawler.worker import app
+from crawler.Decompresser import flatten
+#from crawler.worker import app
 
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
@@ -29,7 +31,7 @@ def initialcategoryURL(pageNum=1, categoryName=category_dic["Mc011"]):
 #lxml로 하려했더니 안되서 일단 html.parser로 작업.
 def parsingWebpage(URL):
     WebpageURL = URL
-    html = urllib.request.urlopen(WebpageURL).read()
+    html = urllib3.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
@@ -50,6 +52,7 @@ def downloadFile(url, file_name, path):
     with open(file_name, "wb") as file:
         response = requests.post(url)
         file.write(response.content)
+
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
 def crawling_list(soup, mode):
