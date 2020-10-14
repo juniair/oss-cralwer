@@ -7,7 +7,7 @@ import logging
 
 #############################################################################
 # logger 세팅.
-log = logging.getLogger()
+log = logging.getLogger(__name__)
 #############################################################################
 
 
@@ -18,6 +18,7 @@ def download(command):
         return 0
 
     chdirflag = False
+    current_path = os.getcwd()
     try:
         try:
             remote_repo_revision = getremoterevision(command)
@@ -56,22 +57,22 @@ def download(command):
         devnull = open(os.devnull, 'w')
         p = subprocess.Popen(command, shell=True, stdout=devnull, stderr=devnull).communicate(timeout=3600)
         if chdirflag:  # pull, update를 수행 한 후 작업 디렉토리 변경.
-            os.chdir('..')
+            os.chdir(current_path)
     except subprocess.TimeoutExpired:  # subprocess 실행시 1시간 이상 진행되면 타임아웃을 발생시킴.
         log.error("Occur TimeoutExpired, kill subprocess.")
         subprocess.call(['taskkill', '/f', '/t', '/pid', str(p.pid)], shell=True)
         log.info("kill subprocess, can't fully download " + command.split(' ')[-1])
         if chdirflag:
-            os.chdir('..')
+            os.chdir(current_path)
         return 0
     except BaseException as e:  # 그 외의 이유로 발생가능한 exception을 일단 처리하기 위함.
-        print(e)
+        log.error(e)
         log.error("Exception Occur at " + command.split(' ')[-1])
         import traceback
         traceback.print_exc()
         log.info("kill subprocess, can't download " + command.split(' ')[-1])
         if chdirflag:
-            os.chdir('..')
+            os.chdir(current_path)
         return 0
     else:  # 다운로드 성공한 경우.
         log.info("End subprocess for downloading complete " + command.split(' ')[-1])
@@ -104,7 +105,7 @@ def getremoterevision(command):
             remote_revisions = revision.split(':')[-1].strip()
             os.remove('temp.txt')
         except Exception as e:
-            print(e)
+            log.error(e)
             try:
                 filePath = str(os.getcwd()) + "\\" if platform.system() == "Windows" else "/" + "temp.txt"
                 f = open(filePath, "r")
@@ -113,7 +114,7 @@ def getremoterevision(command):
                     lines = re.split("\n", paragraph)
                     lines = [x for x in lines if x]
                     for each_line in lines:
-                        if "Revision" in each_line:
+                        if any(["Revision" in each_line, "리비전" in each_line]):
                             remote_revisions = each_line.split(" ")[-1].strip()
                         else:
                             pass
@@ -128,7 +129,9 @@ def getremoterevision(command):
         remote_revisions = result.decode('utf-8').strip()  # ('cp949')
     elif parameters[0] == 'git':
         # git ls-remote 수행
-        p = subprocess.Popen(['git', 'ls-remote', '-h', parameters[2], 'master'], stdout=subprocess.PIPE,
+        # master 브랜치가 없는 경우도 있기 때문에 ls-remote에서 master나 main을 찾는 것은 필요가 없다.
+        # p = subprocess.Popen(['git', 'ls-remote', '-h', parameters[2], 'master', 'main'], stdout=subprocess.PIPE,
+        p = subprocess.Popen(['git', 'ls-remote', '-h', parameters[2]], stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
         (result, error) = p.communicate()
         remote_revisions = result.decode('utf-8').split('\t')[0].strip() # ('cp949')

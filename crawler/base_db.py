@@ -57,7 +57,7 @@ class IndexDB(BaseDB):
         super(IndexDB, self).__init__(port=port, password=password, database_info=self.INDEX_DATABASE)
 
 class CrawlerDB(BaseDB):
-    CRAWLER_DATABASE = "host='127.0.0.1' dbname='crawler' user='postgres' port='{}'"
+    CRAWLER_DATABASE = "host='127.0.0.1' dbname='project' user='postgres' port='{}'"
 
     def __init__(self, port=5432, password=None):
         self.CRAWLER_DATABASE = getenv("CRAWLER_DATABASE", self.CRAWLER_DATABASE.format(port), True)

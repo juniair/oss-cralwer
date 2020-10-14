@@ -3,11 +3,15 @@
 import os
 import json
 import random
+import logging
+from datetime import datetime
 from dotenv import load_dotenv
 from fake_useragent import UserAgent as FakeUserAgent
 import tarfile
 import zipfile
 import py7zr
+
+log = logging.getLogger(__name__)
 
 CRAWLER_ENV = os.getenv("CRAWLER_ENV", "dev")
 load_dotenv()
@@ -18,6 +22,18 @@ def getenv(key, default=None, debug=False):
         print("CRAWLER_ENV=",CRAWLER_ENV)
         print("env", key, value)
     return value
+
+def get_datetime(date_string):
+    # '2012-03-19T17:46:53Z' 
+    return datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%SZ")
+
+def get_yyyy_mm_dd(date_string):
+    try:
+        datetime_data = get_datetime(date_string)
+        return str(datetime_data)[:10]
+    except Exception as e:
+        print(e)
+        return "1900-01-01"
 
 class UserAgent(object):
     ATTRIBUTES_MAP = {
@@ -31,9 +47,10 @@ class UserAgent(object):
 
     def __init__(self, limit=None, *args, **kwargs):
         self.user_agents = []
+
         for attribute, values in self.ATTRIBUTES_MAP.items():
             setattr(self, attribute, kwargs.get(attribute,[v.lower() for v in values]))
-        
+
         for user_agent in self.load_user_agents():
             if limit is not None and len(self.user_agents) >= limit:
                 break
@@ -77,8 +94,8 @@ def get_http_headers():
 
 def get_tor_proxy():
     return {
-        'http': 'http://127.0.0.1:8118',
-        'https': 'http://127.0.0.1:8118'
+        'http': getenv('TOR_HTTP_PROXY','http://127.0.0.1:8118'),
+        'https': getenv('TOR_HTTPS_PROXY','http://127.0.0.1:8118')
     }
 
 
@@ -97,3 +114,5 @@ def extract_file(name, current_directory):
     else:
         result = False
     return result
+
+
