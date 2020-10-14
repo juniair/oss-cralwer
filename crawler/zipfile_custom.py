@@ -14,6 +14,9 @@ import shutil
 import struct
 import binascii
 import threading
+import logging
+
+log = logging.getLogger(__name__)
 
 try:
     import zlib # We may need its compression method

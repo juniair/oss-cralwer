@@ -1,25 +1,38 @@
 import os, sys, json
+import random
 import shutil
 import requests
 import urllib.parse
 import datetime
 import platform
+import time
 from signal import *
 
 import md5hasher
 import GetRepoInfo
 from crawler import DataBase_Crawler_DB, CrawlingInfo, Crawler
 from logger import getLogger, write_progress_log
+from common import get_http_headers, get_tor_proxy, getenv
 
 from github import project_page as project_tasks
 
 log = getLogger(filename="github_crawler.log")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-data_path = BASE_DIR + "/../../data"  # 절대경로 값으로 설정을 해야 하는데...
+data_path = getenv("DOWNLOAD_PATH")  # 절대경로 값으로 설정을 해야 하는데...
 download_path = data_path + "/githubDir" # sourceforge 프로젝트 다운로드 경로
 
+PROGRESS_LOG_FILENAME = data_path + "/progress_github.json"
+
 class GithubCrawler(Crawler):
+    MAX_PROJECT=10
+    # Github 조회리스트
+    LANGUAGE = [
+        "Java", "C++", "C#", "C", "JavaScript", "Python", "Ruby", "PHP", "Objective-C", "Kotlin", 
+        "Scala", "Vue", "Haskell", "ActionScript", "Clojure", "Perl", "Swift", "Visual Basic", "go", "TypeScript",
+        "Rust", "PowerShell", "ocaml"
+        ]
+
     def __init__(self):
         super(GithubCrawler, self).__init__(name="github")
         self.headers= {'Authorization': "token 1d85c431af3ddeaed5e36c9b1e2dd2956943c661"}
@@ -34,7 +47,7 @@ class GithubCrawler(Crawler):
 
     def handler(self, signum, frame):
         print("signum=", signum)
-        DataBase_Crawler_DB(crawlerName="sourceforge_re",
+        DataBase_Crawler_DB(crawlerName="github_re",
                             crawlerStatus='0').crawler_db_insert()
         sys.exit(0)
 
@@ -46,8 +59,8 @@ class GithubCrawler(Crawler):
     def read_progress_log(self):
         log.debug(self.PROGRESS_LOG_FILENAME)
         if os.path.isfile(self.PROGRESS_LOG_FILENAME):
-            with open(self.PROGRESS_LOG_FILENAME, 'r', encoding="utf-8") as self.progress:
-                lastprogress = json.load(self.progress)
+            with open(self.PROGRESS_LOG_FILENAME, 'r', encoding="utf-8") as progress:
+                lastprogress = json.load(progress)
                 self.maximum_delta = lastprogress['maximum_delta']
                 self.delta = lastprogress['delta']
                 self.sum_delta = lastprogress['sum_delta']
@@ -64,16 +77,20 @@ class GithubCrawler(Crawler):
 
     def preCrawling(self):
         log.debug(os.getcwd())
+        # 임의의 언어 선택
+        self.keyword = random.choice(self.LANGUAGE)
         self.read_progress_log()
     
 
-    def search_project_page(self, start, end):
-        url = "https://api.github.com/search/repositories?q=language:{3}+created:{0}..{1}&order=asc&per_page=100&page={2}"\
-            .format(start, end, str(self.page), urllib.parse.quote(self.keyword))
+    def search_project_page(self, keyword, page):
+        url = "https://api.github.com/search/repositories?q=language:{}&order=asc&per_page={}&page={}"\
+            .format(urllib.parse.quote(keyword), self.MAX_PROJECT, str(page))
         log.warning("[crawler_github] " + url + " : Searching...")
         data = None
         try:
-            response = requests.get(url, headers=self.headers)
+            self.headers.update(get_http_headers())
+            log.debug(self.headers)
+            response = requests.get(url, headers=self.headers, proxies=get_tor_proxy())
             if response.status_code == 200:
                 text = response.text
                 data = json.loads(text)
@@ -82,76 +99,54 @@ class GithubCrawler(Crawler):
                 self.page += 1
         except Exception as e:
             log.error(str(e))
-        
+        # log.debug(data)
         return data 
-
-
-    def rename_directory(self, projectName, pid):
-        org_path = os.getcwd()
-        os.chdir(download_path)
-        log.debug("rename_directory: current directory="+download_path+"/"+projectName)
-        try:
-            newdirname = str(pid)
-            log.debug("Rename " + projectName + " > " + newdirname)
-            if os.path.exists(projectName):
-                if os.path.isdir(newdirname):
-                    shutil.rmtree(newdirname)
-                os.rename(projectName, newdirname)
-        except Exception as e:
-            log.error(str(e))
-        os.chdir(org_path)
-        
+    
     def get_current_status(self):
         return {'maximum_delta': self.maximum_delta,'delta': self.delta,'sum_delta': self.sum_delta,'page': self.page, 'keyword': self.keyword}
 
     def crawlingAction(self):
         current = datetime.datetime.utcnow()
 
-        initialPath = os.getcwd()
+        initialPath = download_path # os.getcwd()
         log.warning("crawlingAction : initialPath="+initialPath)
+        os.chdir(initialPath)
 
-        # Github 조회리스트
-        keyword_list = ["Java", "C++", "C#", "C", "JavaScript", "Python", "Ruby", "PHP", "Objective-C", "Kotlin", "Swift"
-                        "Scala", "Vue", "Haskell", "ActionScript", "Clojure", "Perl", "Swift", "Visual Basic"]
+        # 조사 대상 언어를 복사하고 섞는다.
+        # 크롤링을 비규칙적으로 해서 균등하게 되도록 하려는 목적.
+        keyword_list = self.LANGUAGE.copy()
+        random.shuffle(keyword_list)
 
+        DataBase_Crawler_DB(crawlerName="github_re",crawlerStatus='1').crawler_db_insert()
         # 최종 기록된 키워드 부터 
         checked_keyword_index = keyword_list.index(self.keyword.strip())
         for gitkeyword in keyword_list[checked_keyword_index:]:
             self.keyword = gitkeyword
 
-            log.debug("=================Now Keyword : " + self.keyword)
+            log.info("=================Now Keyword : " + self.keyword)
 
             current_path = initialPath
-            while self.sum_delta <= self.maximum_delta:
-                DataBase_Crawler_DB(
-                    crawlerName="github_re",
-                    crawlerStatus='1').crawler_db_insert()
-                target = current - datetime.timedelta(days=self.sum_delta)
-                start = str(target).split('.')[0].replace(' ', 'T')
-                target2 = target + datetime.timedelta(days=self.delta)
-                end = str(target2).split('.')[0].replace(' ', 'T')
-                # page = 1
-                while True:
-                    dictionary = self.search_project_page(start, end)
-                    if dictionary is None: 
-                        log.warning("[crawler_github] Error or No Result")
-                        break
-
-                    #  Project information print
-                    for item in dictionary['items']:
-                        project_tasks.get_release_info.delay(item, current_path, self.get_current_status())
-
-                self.sum_delta += self.delta
-                #다음날짜 탐색시 1페이지부터 탐색하도록
-                self.page = 1
+            
+            while True:
                 self.write_progress_log()
+                dictionary = self.search_project_page(gitkeyword, self.page)
+                if dictionary is None: 
+                    log.warning("[crawler_github] Error or No Result")
+                    break
 
-                print("sum_delta : " + str(self.sum_delta))
-                os.chdir(initialPath)
+                #  Project information print
+                for item in dictionary['items']:
+                    log.warning("call get_release_info : {}".format(item["name"]))
+                    project_tasks.get_release_info.delay(item, current_path, self.get_current_status())
 
+                time.sleep(60*60) # wait for 60 minutes
+                # break # test
+            os.chdir(initialPath)
             # 다음 키워드 검색을 위하여 초기화
             self.sum_delta = 1
             self.page = 1
+            time.sleep(60*60*2) # wait for 2 hours
+            # break # test
 
         #완료 후 초기화
         self.maximum_delta = 730
