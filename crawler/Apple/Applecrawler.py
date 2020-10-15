@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import urllib3.request
+import urllib.request
 import requests
 import os, time
 from bs4 import BeautifulSoup
@@ -13,7 +13,7 @@ isExist = []
 
 def parsingWebpage(URL):
     WebpageURL = URL
-    html = urllib3.request.urlopen(WebpageURL).read()
+    html = urllib.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
@@ -37,7 +37,7 @@ def downloadFile(url, file_name, path):
 def one_versionCrawl(URL, filePath):
     try:
         soup = parsingWebpage(URL)
-    except urllib3.error.HTTPError:
+    except urllib.error.HTTPError:
         print("\t\t\t\t해당 페이지는 웹페이지 오류로 인해 접속이 불가능합니다.")
         return
 

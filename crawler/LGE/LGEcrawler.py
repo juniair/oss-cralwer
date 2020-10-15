@@ -3,7 +3,7 @@
 # opensource.lge.com 사이트에서 크롤링해주는 프로그램.
 # 카테고리 7와, Model List의 모든 페이지와, Software List의 라이선스와 소스를 받음. 한번에 6개까지 다운로드 가능.
 import sys
-import urllib3.request
+import urllib.request
 import requests
 import re, os, shutil
 from bs4 import BeautifulSoup
@@ -31,7 +31,7 @@ def initialcategoryURL(pageNum=1, categoryName=category_dic["Mc011"]):
 #lxml로 하려했더니 안되서 일단 html.parser로 작업.
 def parsingWebpage(URL):
     WebpageURL = URL
-    html = urllib3.request.urlopen(WebpageURL).read()
+    html = urllib.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 

@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
+
 import urllib.request
-import requests, os
+import requests, os, re
 from bs4 import BeautifulSoup
 
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Joomla_Crawling"
@@ -19,10 +21,16 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
+# 텍스트에 포함되어 있는 특수 문자 제거
+def cleanText(readData):
+    text = re.sub('[+,#/\?:^$.@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    return text
+
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
+        cleanText(i)
         try:
             os.mkdir(i)
         except FileExistsError:
@@ -104,10 +112,9 @@ def projectDownload(URL):
                                 if (j['rowspan'] is not None):
                                     if sec_toggle == 0:
                                         if j != fileList[0]:
-                                            print("삭제!")
                                             del filePath[-1]
-                                            print(filePath[-1])
-                                        releaseName = j.a.text
+
+                                        releaseName = j.a.text.strip()
                                         filePath.append(releaseName)
                                         print("\t\t릴리즈명: " + releaseName)
                                         sec_toggle = 1
@@ -127,16 +134,17 @@ def projectDownload(URL):
 
                                     print("\t\t\t파일명: " + fileName)
                                     print("\t\t\t" + fileURL + "\n")
-                                    
-                                    print("★★★★★★★★★★★★★저장되는 경로★★★★★★★★★★★")
-                                    print(filePath)
-                                    print("★★★★★★★★★★★★★저장되는 경로★★★★★★★★★★★\n")
-                                    #downloadFile(fileURL, fileName, filePath)
 
+                                    print(filePath)
+                                    downloadFile(fileURL, fileName, filePath)
+                            if(j==fileList[-1]):
+                                del filePath[-1]
+                        del filePath[-1]
 
 
         except(KeyError):
             pass
+
 
 def proejectScrapping(URL):
     soup = parsingWebpage(URL)
@@ -163,7 +171,7 @@ def one_page_crawling(soup):
             print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n"+projectLink)
 
             #프로젝트 폴더 생성을 위한 추가.
-            projectName = i.text
+            projectName = i.text.strip()
             filePath.append(projectName)
             print("프로젝트명: ", projectName)
         elif count % 3 == 1:
@@ -200,4 +208,4 @@ if __name__ == "__main__":
     except FileExistsError:
         pass
     joomla_crawling_start()
-    #flatten(BaseFolderDirectory)
+    flatten(BaseFolderDirectory)
