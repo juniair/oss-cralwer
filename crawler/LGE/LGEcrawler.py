@@ -5,7 +5,7 @@
 import sys
 import urllib.request
 import requests
-import re, os, shutil
+import re, os
 from bs4 import BeautifulSoup
 from crawler.Decompresser import flatten
 #from crawler.worker import app
@@ -49,10 +49,12 @@ def downloadFile(url, file_name, path):
         os.chdir(savePath)
     print("현재 경로는: {}".format(os.getcwd()))
 
-    with open(file_name, "wb") as file:
-        response = requests.post(url)
-        file.write(response.content)
+    response = requests.post(url, stream="True")
+    opensourceFile = text_file = open(file_name,"wb")
+    for chunk in response.iter_content(chunk_size=1024):
+        opensourceFile.write(chunk)
 
+    opensourceFile.close()
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
 def crawling_list(soup, mode):
@@ -75,7 +77,7 @@ def crawling_list(soup, mode):
         if i.find(class_='model-name') is not None:
             Model = i.find(class_='model-name').text
         description = i.find(class_='description').text
-        print(">>>>>>\t{} > {} > {}\t<<<<<<".format(Sub_category, Model, description))
+        print(">>>>>>\t{} => {} -> {}\t<<<<<<".format(Sub_category, Model, description))
         filePath.append(Sub_category)
         filePath.append(Model)
         filePath.append(description)
