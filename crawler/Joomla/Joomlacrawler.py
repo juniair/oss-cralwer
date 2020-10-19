@@ -23,21 +23,20 @@ def parsingWebpage(URL):
 
 # 텍스트에 포함되어 있는 특수 문자 제거
 def cleanText(readData):
-    text = re.sub('[+,#/\?:^$.@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
     return text
 
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
-        cleanText(i)
+        i = cleanText(i)
         try:
             os.mkdir(i)
         except FileExistsError:
             pass
         savePath = savePath + os.sep + i
         os.chdir(savePath)
-    print("\t\t\t\t현재 경로는: {}".format(os.getcwd()))
 
     with open(file_name, "wb") as file:
         response = requests.get(url)
@@ -135,7 +134,7 @@ def projectDownload(URL):
                                     print("\t\t\t파일명: " + fileName)
                                     print("\t\t\t" + fileURL + "\n")
 
-                                    print(filePath)
+                                    print(" => ".join(filePath))
                                     downloadFile(fileURL, fileName, filePath)
                             if(j==fileList[-1]):
                                 del filePath[-1]

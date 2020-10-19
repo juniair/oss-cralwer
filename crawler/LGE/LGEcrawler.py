@@ -35,12 +35,18 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
+# 텍스트에 포함되어 있는 특수 문자 제거
+def cleanText(readData):
+    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    return text
+
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
 #@app.task(autoretry_for=(Exception,))
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
+        i = cleanText(i)
         try:
             os.mkdir(i)
         except FileExistsError:
