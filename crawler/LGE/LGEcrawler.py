@@ -1,12 +1,14 @@
+# -*- coding: utf-8 -*-
+
 # opensource.lge.com 사이트에서 크롤링해주는 프로그램.
 # 카테고리 7와, Model List의 모든 페이지와, Software List의 라이선스와 소스를 받음. 한번에 6개까지 다운로드 가능.
-
+import sys
 import urllib.request
 import requests
-import re, os, shutil
+import re, os
 from bs4 import BeautifulSoup
-from crawler.LGE.Decompresser import flatten
-from crawler.worker import app
+from crawler.Decompresser import flatten
+#from crawler.worker import app
 
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
@@ -29,28 +31,36 @@ def initialcategoryURL(pageNum=1, categoryName=category_dic["Mc011"]):
 #lxml로 하려했더니 안되서 일단 html.parser로 작업.
 def parsingWebpage(URL):
     WebpageURL = URL
-    req = urllib.request.Request(WebpageURL, headers=hdr)
     html = urllib.request.urlopen(WebpageURL).read()
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
+# 텍스트에 포함되어 있는 특수 문자 제거
+def cleanText(readData):
+    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    return text
+
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
-@app.task(autoretry_for=(Exception,))
+#@app.task(autoretry_for=(Exception,))
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
+        i = cleanText(i)
         try:
             os.mkdir(i)
         except FileExistsError:
             pass
-        savePath =  savePath + os.sep + i
+        savePath = savePath + os.sep + i
         os.chdir(savePath)
     print("현재 경로는: {}".format(os.getcwd()))
 
-    with open(file_name, "wb") as file:
-        response = requests.post(url)
-        file.write(response.content)
+    response = requests.post(url, stream="True")
+    opensourceFile = text_file = open(file_name,"wb")
+    for chunk in response.iter_content(chunk_size=1024):
+        opensourceFile.write(chunk)
+
+    opensourceFile.close()
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
 def crawling_list(soup, mode):
@@ -73,7 +83,7 @@ def crawling_list(soup, mode):
         if i.find(class_='model-name') is not None:
             Model = i.find(class_='model-name').text
         description = i.find(class_='description').text
-        print(">>>>>>\t{} > {} > {}\t<<<<<<".format(Sub_category, Model, description))
+        print(">>>>>>\t{} => {} -> {}\t<<<<<<".format(Sub_category, Model, description))
         filePath.append(Sub_category)
         filePath.append(Model)
         filePath.append(description)
@@ -106,10 +116,10 @@ def LG_Crawling_Start():
         while(1):
             #매번 다음 페이지 파싱.
             currentPageSoup = parsingWebpage(initialcategoryURL(currentPageNum, category))
-            isEndPage = currentPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
+            isEndPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
 
             if (isEndPage[0].text == "No results"):
-                print("다음 카테고리로!\n")
+                print("다음 카테고리로\n")
                 break
 
             crawling_list(currentPageSoup, "Model")                             #모델 리스트 긁기
