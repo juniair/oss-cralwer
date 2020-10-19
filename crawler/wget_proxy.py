@@ -22,6 +22,10 @@ __version__ = "3.2"
 import sys, shutil, os
 import tempfile
 import math
+import socket
+
+# default timeout = 180s
+socket.setdefaulttimeout(180)
 
 PY3K = sys.version_info >= (3, 0)
 if PY3K:
@@ -31,7 +35,7 @@ else:
   import urllib as ulib
   import urlparse
 
-
+MAX_RETRIES = 3
 # --- workarounds for Python misbehavior ---
 
 # enable passing unicode arguments from command line in Python 2.x
@@ -487,7 +491,7 @@ def detect_filename(url=None, out=None, headers=None, default="download.wget"):
     return names["out"] or names["headers"] or names["url"] or default
 
     
-def download(url, out=None, bar=bar_adaptive, proxies=None, user_agent=None, debuglevel=1):
+def download(url, out=None, bar=bar_adaptive, proxies=None, user_agent=None, retries=MAX_RETRIES, debuglevel=1):
     """High level function, which downloads URL into tmp file in current
     directory and then renames it to filename autodetected from either URL
     or HTTP headers.
@@ -541,16 +545,24 @@ def download(url, out=None, bar=bar_adaptive, proxies=None, user_agent=None, deb
             ulib.install_opener(opener)
     else:
         binurl = url
-    (tmpfile, headers) = ulib.urlretrieve(binurl, tmpfile, callback)
-    filename = detect_filename(url, out, headers)
-    if outdir:
-        filename = outdir + "/" + filename
 
-    # add numeric ' (x)' suffix if filename already exists
-    if os.path.exists(filename):
-        filename = filename_fix_existing(filename)
-    shutil.move(tmpfile, filename)
+    while retries > 0:
+        try:
+            (tmpfile, headers) = ulib.urlretrieve(binurl, tmpfile, callback)
+            filename = detect_filename(url, out, headers)
+            if outdir:
+                filename = outdir + "/" + filename
 
-    #print headers
-    return filename
+            # add numeric ' (x)' suffix if filename already exists
+            if os.path.exists(filename):
+                filename = filename_fix_existing(filename)
+            shutil.move(tmpfile, filename)
+
+            #print headers
+            return filename
+        except Exception as e:
+            log.error(e)
+            retries = retries - 1
+            if retries > 0: continue
+            else: raise e
 

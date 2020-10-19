@@ -10,96 +10,97 @@ import tarfile
 import zipfile
 import requests
 import shutil
+import logging
 from bs4 import BeautifulSoup
 
-from worker import app
-from logger import getLogger, write_progress_log
-from crawler import DataBase_Crawler_DB, CrawlingInfo
-import VCSDownloader, GetRepoInfo
+from worker.github import app
+
+from logger import getLogger
+from crawler import CrawlingInfo
+import VCSDownloader
+from GetRepoInfo import GetRepoInfo
+from common import getenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-data_path = BASE_DIR + "/../../data"  # 절대경로 값으로 설정을 해야 하는데...
+data_path = getenv("DOWNLOAD_PATH")  # 절대경로 값으로 설정을 해야 하는데...
 download_path = data_path + "/githubDir" # sourceforge 프로젝트 다운로드 경로
 
-log = getLogger(filename="github_crawler.log")
+log = logging.getLogger(__name__) # getLogger(filename="github_crawler.log")
 
 @app.task(autoretry_for=(Exception,))
-def get_source_code(item, remote_repo_revision,  pid, current_path, current_status):
-    log.debug(item)
+def get_source_code(projectInfo, clone_url, git_id,  pid, current_path, progress_status):
+    log.debug(projectInfo)
+    projectInfo.pop("projectUrlHash", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
+    projectInfo.pop("hashing", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
+    projectInfo.pop("nameMargin", None) # 클래스 생성자에 없는 파라미터 삭제
+    projectInfo.pop("pppid", None) # 클래스 생성자에 없는 파라미터 삭제
+    crawlingInfo = CrawlingInfo(**projectInfo)
 
-    result = git_clone(item, remote_repo_revision, pid, current_path, current_status)
-    rename_directory(item["name"], pid)
+    result = git_clone(crawlingInfo, clone_url, git_id, pid, current_path, progress_status) # item, remote_repo_revision
     return result
 
-def rename_directory(projectName, pid):
-    org_path = os.getcwd()
-    os.chdir(download_path)
-    log.debug("rename_directory: current directory="+download_path+"/"+projectName)
+def git_clone(crawlingInfo, clone_url, git_id, pid, current_path, current_status):  # item, remote_repo_revision,
+    # print("Clone URL : " + item['clone_url'])
+    command = "git clone {0} {1}".format(clone_url, crawlingInfo.projectName + '_' + str(git_id))
+    
+    log.debug("get release list from repository :"+clone_url)
     try:
-        newdirname = str(pid)
-        log.debug("Rename " + projectName + " > " + newdirname)
-        if os.path.exists(projectName):
-            if os.path.isdir(newdirname):
-                shutil.rmtree(newdirname)
-            os.rename(projectName, newdirname)
+        log.debug(command)
+        remote_repo_revision = GetRepoInfo.getReleaseVersion(command)
     except Exception as e:
-        log.error(str(e))
-    os.chdir(org_path)
+        log.error(e)
+        remote_repo_revision = "0"
+    log.debug(remote_repo_revision)
+    # 원격저장소 리비전이 없거나. 리포트저장소의 리비전이 0인경우.
+    if (remote_repo_revision == "0") or (len(remote_repo_revision) < 1):
+        log.warning(crawlingInfo.projectName+" has no revision information")
+        return False
 
-def git_clone(item, remote_repo_revision, pid, current_path, current_status):
-    crawlingInfo = CrawlingInfo(
-        crawlerName="github_re",
-        projectName=item["name"] if item.get("name") else "UnKnown",
-        projectUrl=item["html_url"] if item.get("html_url") else "",
-        summary=item["description"] if item.get("description") else "",
-        homepageUrl=item["homepage"] if item.get("homepage") else "",
-        createdOn="",
-        programmingLanguage=item["language"] if item.get("language") else "",
-        License=item["license"]["name"] if item["license"].get("name") else ""
-    )
+    # 서버상 물리적 위치 
+    file_dir = "/HDD2"+download_path
 
-    file_dir = data_path + ("\\githubDir\\" if platform.system() == "Windows" else "/githubDir/")
-    command = "git clone {0} {1}".format(item["clone_url"], crawlingInfo.projectName + '_' + str(item['id']))
+    # (git_hash, revision_name)형태 배열 재구성
+    revision_list = list(zip(remote_repo_revision[0::2], remote_repo_revision[1::2]))
+    for rev in revision_list:
+        os.chdir(current_path) # move project directory
 
-    downcnt = 0
-    while downcnt < len(remote_repo_revision):
-        log.debug("change project directory :"+current_path)
-        os.chdir(current_path)
-
-        if remote_repo_revision[downcnt + 1].startswith('refs/tags/'):
-            temp = remote_repo_revision[downcnt + 1].split("/")
-            revision = "_".join(temp[2:len(temp)])
-        else:
-            revision = remote_repo_revision[downcnt + 1].split("/")[-1]
-
-        # 특수문자 replace
-        revision = re.sub('[\\\\/:*?\"<>|]', '_', revision)
+        git_hash = rev[0]
+        release_ver = rev[1]
+        revision = release_ver.split('/')[-1] # refs/tag or refs/head 를 제외한 이름
         rel_createdOn = ""
+        if revision == '': revision = 'UnKnown'
         log.debug("change revision directory :"+revision)
-        try:
-            os.chdir(revision)
-        except:
-            os.mkdir(revision)
-            os.chdir(revision)
-
+        
+        # 리비젼 데이터를 다운로드 했는지 체크하여 다운로드 했다면 pass
+        if crawlingInfo.project_file_db_exists(revision) is not False:
+            log.info('{0}:{1} is downloaded. '.format(crawlingInfo.projectName, revision))
+            continue
+        # revision 디렉토리에 소스코드가 cloning되도록 command를 수정
+        # revision 디렉토리 생성하는 코드는 주석처리 -> 정상 동작 확인 후 삭제 예정
+        command = "git clone {0} {1}".format(clone_url, revision)
+        # try:
+        #     os.chdir(revision)
+        # except:
+        #     os.makedirs(revision)
+        #     os.chdir(revision)
+        
         downresult = 0
         try:
-            log.warning('[crawler_github] found {0} project. trying to cloning/pull...'.format(item['name']))
+            log.warning('[crawler_github] found {0}:{1} project. trying to cloning/pull...'.format(crawlingInfo.projectName, revision))
             downresult = VCSDownloader.download(command)
-            log.warning('[crawler_github] complete download {0}'.format(item['name'].replace(' ', '-')))
+            log.warning('[crawler_github] complete download {0}:{1}'.format(crawlingInfo.projectName.replace(' ', '-'), revision))
         except Exception as e:
             log.error(str(e))
-
         if downresult >= 1:
             # git을 제외한 다른 다운로드 방식은 릴리즈 버전별 작업이 어려워 git만 작업한다.
             try:
-                rel_createdOn = GetRepoInfo.ResetHardGit(command, remote_repo_revision, revision, downcnt)
+                rel_createdOn = GetRepoInfo.ResetHardGit(command, git_hash, release_ver)
+                fileInfo = [file_dir, revision, rel_createdOn]
+                log.debug(fileInfo)
+                # DB 부분은 테스트로 제외
+                crawlingInfo.project_file_db_insert(fileInfo)
             except Exception as e:
                 log.error(str(e))
-                pass
-
-        fileInfo = [file_dir, revision, rel_createdOn]
-        crawlingInfo.project_file_db_insert(fileInfo)
-        downcnt += 2
+ 
+    return (downresult >= 1)
     
-    return True

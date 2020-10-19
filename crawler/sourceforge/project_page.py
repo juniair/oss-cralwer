@@ -8,8 +8,10 @@ import platform
 from signal import *
 import requests
 import shutil
+import logging
 from datetime import datetime
 from bs4 import BeautifulSoup
+from celery.utils.log import get_task_logger
 
 from worker import app
 from logger import getLogger, write_progress_log
@@ -19,7 +21,8 @@ import md5hasher
 from sourceforge import source_page as download_tasks
 from common import get_http_headers, get_tor_proxy, getenv
 
-log = getLogger(filename='sourceforge_project_page.log')
+# log = logging.getLogger(__name__) # getLogger(filename='sourceforge_project_page.log')
+log = get_task_logger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = getenv("DOWNLOAD_PATH") #BASE_DIR + "/../../data"  # 절대경로 값으로 설정을 해야 하는데...
@@ -56,7 +59,7 @@ def printdetail(href_value, download_path, progress_status):
     crawlerInfo = None
 
     infoAddress = "https://sourceforge.net" + href_value  # href.get('href')
-    print(infoAddress)  # debug
+    log.debug(infoAddress)  # debug
     URLHash = md5hasher.hashing(infoAddress)
     response = requests.get(infoAddress, headers=get_http_headers(), proxies=get_tor_proxy())
     html = response.text
@@ -69,7 +72,7 @@ def printdetail(href_value, download_path, progress_status):
         return 0
 
     projectUrl = infoAddress
-    # print("Project URL Hash : " + URLHash)
+    # log.debug("Project URL Hash : " + URLHash)
 
     # 프로젝트 이름
     projectName = ''
@@ -162,7 +165,7 @@ def printdetail(href_value, download_path, progress_status):
                 log.debug("fetch: {}, {}, license={}, pid={}".format(
                     projectName, projectUrl, License, pid))
                 # 새 디렉토리 말고 기존 디렉토리에서 이어받기 위하여
-                # print("self.pid=",self.pid, "ppid=", ppid)
+                # log.debug("self.pid=",self.pid, "ppid=", ppid)
                 if ppid:
                     if int(ppid) < int(pid):
                         pid = ppid
@@ -184,6 +187,7 @@ def printdetail(href_value, download_path, progress_status):
                 else:
                     os.chdir(pid)
                 log.warning("printdetail(project) : current directory="+os.getcwd())
+    result = False
     if crawlerInfo:
         # revision = "UnKnown" # sourceforge에서는 revision값이 없는 것으로 가정
         # rel_createdOn = ""
@@ -217,7 +221,7 @@ def printdetail(href_value, download_path, progress_status):
                 
                 log.debug("Code : https://sourceforge.net" + link)
                 # 해당 링크를 기점으로 코드탐색 실행.
-                # print(crawlerInfo.__dict__)
+                # log.debug(crawlerInfo.__dict__)
                 download_tasks.download_from_sourceforge_code_tab.delay(
                     "https://sourceforge.net" + link,
                     crawlerInfo.__dict__,
@@ -227,11 +231,12 @@ def printdetail(href_value, download_path, progress_status):
                     progress_status               
                 )
 
-                return True
+                result = True
+                break
             elif element.text == 'Files':
                 # Code 네비게이션이 없으면 Files를 탐색.
-                # print("Files : https://sourceforge.net" + link)
-
+                # log.debug("Files : https://sourceforge.net" + link)
+                log.debug("Files : https://sourceforge.net" + link)
                 # 해당 링크를 기점으로 파일탐색 실행.
                 download_tasks.download_from_sourceforge_files_tab.delay(
                     "https://sourceforge.net" + link,
@@ -242,12 +247,10 @@ def printdetail(href_value, download_path, progress_status):
                     progress_status
                 )
 
-                return True
+                result = True
+                break
+        else:
+            log.warning("[{}] Not Found Files or Code ....".format(crawlerInfo.projectName))
     else:
         log.error(projectName+" --> crawlerInfo is None --> do not found project information(additionalProjectDetails)")
-        write_progress_log(
-            progress_status["LAST_SEARCH_CATEGORY"], 
-            progress_status["LAST_SEARCH_PAGE"], 
-            progress_status["LAST_PROJECT_NUMBER"], 
-            progress_status["PROGRESS_LOG_FILENAME"])
-    return False
+    return result

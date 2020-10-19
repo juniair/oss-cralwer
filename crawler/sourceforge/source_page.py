@@ -8,8 +8,10 @@ import json
 import requests
 import shutil
 import traceback
+import logging
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
+from celery.utils.log import get_task_logger
 
 from worker import app
 from logger import getLogger, write_progress_log
@@ -18,7 +20,8 @@ import md5hasher
 import VCSDownloader, URLDownloader
 from common import get_http_headers, get_tor_proxy, extract_file, getenv
 
-log = getLogger(filename="sourceforge_source_page.log")
+# log = logging.getLogger(__name__) # getLogger(filename="sourceforge_source_page.log")
+log = get_task_logger(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 data_path = getenv("DOWNLOAD_PATH") # BASE_DIR + "/../../data"  # 절대경로 값으로 설정을 해야 하는데...
@@ -115,13 +118,18 @@ def get_latest_commit_date_from_cvs_history(history_url):
 
 def insert_release_version(revision_name, modified_dt, pid, crawlerInfo):
     # file_db insert
-    revision = "/".join(revision_name)
-    file_dir = download_path
+    revision = "/".join(revision_name if revision_name is not None else 'UnKnown')
+    # db에 저장 되는 경로는 docker환경이 아닌 host의 file경로 정의
+    file_dir = "/HDD2"+download_path 
     fileInfo = [file_dir, revision, modified_dt, pid]
     log.info("insert_release_version : projectName="+crawlerInfo.projectName)
     log.info("insert_release_version : revision="+revision)
     log.info("insert_release_version : modified_dt="+modified_dt)
     crawlerInfo.project_file_db_insert(fileInfo)
+
+def exists_release_version(revision_name, crawlerInfo):
+    revision = "/".join(revision_name if revision_name is not None else 'UnKnown')
+    return crawlerInfo.project_file_db_exists(revision)
 
 # Code를 통해 소스코드를 받을 수 있는지 검사, 다운로드하는 함수.
 # 기본적으로는 access_url이 있는지 검사하여, input field의 내용을 subprocess를 통해 실행시킨다.
@@ -149,7 +157,13 @@ def search_sourcefile_from_code_tab(url, crawlingInfo, projectName, pid, current
         latest_commit_date = get_latest_commit_date_from_cvs_history(history_url["href"])
     else: latest_commit_date = ""
     
-    insert_release_version(["UnKnown"], latest_commit_date, pid, crawlingInfo) 
+    # 릴리스 정보가 이미 DB에 있는 경우  psss
+    if exists_release_version(["UnKnown"], crawlingInfo) != False: 
+        log.warning("release [{}] is exists!".format("/".join(["UnKnown"])))
+        return True
+
+    insert_release_version(["UnKnown"], latest_commit_date, pid, crawlingInfo)
+
     # revision 디렉토리 생성하고 이동
     sub_directory = os.path.join(os.getcwd(), "UnKnown")
     log.debug('sub_directory='+sub_directory)
@@ -253,6 +267,20 @@ def search_sourcefile_from_files_tab(url, crawlingInfo, projectName, pid, curren
             if len(release["version"]) > 0: del release["version"][-1] 
             ret = (chkval >= 1)
     else:
+        # 릴리스 정보가 이미 DB에 있는 경우  psss
+        if exists_release_version(release["version"], crawlingInfo) != False: 
+            log.warning("release [{}] is exists!".format("/".join(release["version"])))
+            return True
+        
+        # 릴리즈 버젼 정보가 없는 경우는 UnKnown으로 디렉토리를 생성한다.
+        if len(release["version"]) == 0:
+            sub_directory = os.path.join(os.getcwd(), "UnKnown")
+            log.debug('sub_directory='+sub_directory)
+            # os.mkdir(directory['title'])
+            os.makedirs(sub_directory)
+            os.chdir(sub_directory)
+            release["version"].append('UnKnown')
+
         # 릴리스 정보 insert
         insert_release_version(release["version"], release["modified_dt"], pid, crawlingInfo)
 

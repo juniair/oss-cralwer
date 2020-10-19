@@ -6,10 +6,12 @@ import sys
 import platform
 import re
 import json
+import time
 import shutil
 import tarfile
 import zipfile
 import requests
+import logging
 from signal import *
 from bs4 import BeautifulSoup
 import atexit
@@ -21,13 +23,14 @@ import URLDownloader
 from sourceforge import project_page as project_tasks
 from common import get_http_headers, get_tor_proxy
 
+## 메인 크롤러의 로그를 별도로 저장 하기 위해 아래 로거 설정을 사용
 log = getLogger(filename="sourceforge_crawler.log")
 
 
 class SourceForgeCrawler(Crawler):
     def __init__(self):
         super(SourceForgeCrawler, self).__init__(name="sourceforge")
-        print("SourceForgeCrawler Intialize....")
+        log.debug("SourceForgeCrawler Intialize....")
         for sig in (SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM):
             signal(sig, self.handler)
 
@@ -43,7 +46,7 @@ class SourceForgeCrawler(Crawler):
             "/progress_{}.json".format(self.name)
 
     def handler(self, signum, frame):
-        print("signum=", signum)
+        log.debug("signum=", signum)
         DataBase_Crawler_DB(crawlerName="sourceforge_re",
                             crawlerStatus='0').crawler_db_insert()
         sys.exit(0)
@@ -65,7 +68,7 @@ class SourceForgeCrawler(Crawler):
         try:
             self.read_progress_log()
         except FileNotFoundError:
-            self.write_progress_log()
+            self.write_progress_log(self.LAST_SEARCH_CATEGORY, self.LAST_SEARCH_PAGE, self.LAST_PROJECT_NUMBER)
 
     def crawlingAction(self):
         log.warning(self.badge + 'Hi!')
@@ -98,12 +101,16 @@ class SourceForgeCrawler(Crawler):
                 # 카테고리 크롤링 개시
                 self.category_crawling(sourceforgeCategory, initialPath)
 
-                break # test
+                time.sleep(60*60) # 하나의 카테고리 검색이 끝나면 60분간 waiting
+                # break # test
+            DataBase_Crawler_DB(
+                crawlerName="sourceforge_re",
+                crawlerStatus='0').crawler_db_insert()
         except requests.ConnectionError as e:
-            self.log.error(e)
-
-        self.write_progress_log(self.LAST_SEARCH_CATEGORY,
-                                self.LAST_SEARCH_PAGE, self.LAST_PROJECT_NUMBER)
+            log.error(e)
+            DataBase_Crawler_DB(
+                crawlerName="sourceforge_re",
+                crawlerStatus='0').crawler_db_insert()
 
         # DataBase_Crawler_DB(
         #     crawlerName="sourceforge_re",
@@ -114,8 +121,9 @@ class SourceForgeCrawler(Crawler):
         self.LAST_PROJECT_NUMBER = 0
 
     def category_crawling(self, category, initialPath):
-        url = "https://sourceforge.net/directory/" + category + "/?page="
-        log.debug('category_crawling url='+url)
+        # https://sourceforge.net/directory/development/development/os:windows/?page=2
+        url = "https://sourceforge.net/directory/" + category + "/os:windows/?page="
+        
         # 이전 수행 페이지가 있는 경우 해당 값을 가져옴.
         if int(self.LAST_SEARCH_PAGE) == 0:
             page = 1
@@ -128,14 +136,18 @@ class SourceForgeCrawler(Crawler):
         # 페이지 1부터 PAGE_SEARCH_LIMIT까지 스크래핑.
         while page <= PAGE_SEARCH_LIMIT:
             self.LAST_SEARCH_PAGE = page
+            self.LAST_PROJECT_NUMBER = 0
+
             result = self.crawling_onepage(url + str(page), initialPath)
 
             # Category Find Terminate Condition check.
-            if result == 0: break
+            if result == False: break
             page += 1
-            # self.write_progress_log(
-            #     self.LAST_SEARCH_CATEGORY, page, self.LAST_PROJECT_NUMBER)
-            break # test
+            self.write_progress_log(
+                self.LAST_SEARCH_CATEGORY, self.LAST_SEARCH_PAGE, self.LAST_PROJECT_NUMBER)
+            
+            time.sleep(60*20) # 한 페이지 크롤링 후 10분간 waiting
+            # break # test
 
 
     # index 페이지를 기준으로 최대 25건의 데이터를 크롤링 하고 프로젝트 다운로드.
@@ -148,7 +160,8 @@ class SourceForgeCrawler(Crawler):
 
         # 404 Not Found
         if response.status_code == 404:
-            return 0
+            log.error("requests.status_code = 404 : url="+url) 
+            return False
 
         soup = BeautifulSoup(response.text, 'lxml')  # 성능 향상을 위해 lxml 파서 사용.
 
@@ -157,11 +170,13 @@ class SourceForgeCrawler(Crawler):
             'section', {'class': "m-project-search-results"})
 
         if checkNoResult is None:
-            raise requests.ConnectionError
+            log.error("requests.ConnectionError : url="+url) 
+            return False
 
         result = checkNoResult.find('section', {'class': "project_info"})
         if result is not None and "No results found" in result.text:
-            return 0
+            log.error("No results found : url="+url) 
+            return False
 
         # 프로젝트 리스트 탐색
         prev_index = int(self.LAST_PROJECT_NUMBER)
@@ -173,10 +188,10 @@ class SourceForgeCrawler(Crawler):
                 current_index += 1
                 # 기탐색된 프로젝트 스킵
                 if current_index < prev_index:
-                    #self.LAST_PROJECT_NUMBER = (int(self.LAST_PROJECT_NUMBER) % 25) + 1
+                    self.LAST_PROJECT_NUMBER = (int(self.LAST_PROJECT_NUMBER) % 100) + 1
                     continue
                 self.LAST_PROJECT_NUMBER = (
-                    int(self.LAST_PROJECT_NUMBER) % 25) + 1
+                    int(self.LAST_PROJECT_NUMBER) % 100) + 1
                 # 프로젝트 기본정보 취득
                 href_value = href.get('href')
                 # self.printdetail(href_value, initialPath)
@@ -190,11 +205,13 @@ class SourceForgeCrawler(Crawler):
                     href_value, initialPath, progress_status)
 
                 log.debug("---------------"+href_value)
+                self.write_progress_log(self.LAST_SEARCH_CATEGORY, self.LAST_SEARCH_PAGE, self.LAST_PROJECT_NUMBER)
 
-        self.LAST_PROJECT_NUMBER = 0
-        return 1
+        return True
 
 
 if __name__ == "__main__":
     crawler = SourceForgeCrawler()
-    crawler.crawling()
+    while(True):
+        crawler.crawling()
+        time.sleep(60*60)
