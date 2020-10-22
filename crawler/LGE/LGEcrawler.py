@@ -8,8 +8,8 @@ import requests
 import re, os
 from bs4 import BeautifulSoup
 from crawler.Decompresser import flatten
-#from crawler.worker import app
-
+from crawler import DataBase_Crawler_DB
+from worker import app
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
 hdr = {'User_Agent': 'Mozilla/5.0'}
@@ -41,7 +41,7 @@ def cleanText(readData):
     return text
 
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
-#@app.task(autoretry_for=(Exception,))
+@app.task(autoretry_for=(Exception,))
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
@@ -106,10 +106,14 @@ def crawling_list(soup, mode):
                 downloadLink = downloadLink + "/" + k
             print(downloadLink)
             print("파일명: {}\n".format(fileName))
-            downloadFile(downloadLink, fileName, filePath)            #시스템 구축 안하고 돌리면 LG오픈소스 사이트에서 차단 먹이는 코드.
+            #downloadFile(downloadLink, fileName, filePath)            #시스템 구축 안하고 돌리면 LG오픈소스 사이트에서 차단 먹이는 코드.
     print("{} List 다운 완료.".format(mode))
 
 def LG_Crawling_Start():
+    DataBase_Crawler_DB(
+        crawlerName="LGEcrawler",
+        crawlerStatus='1').crawler_db_insert()
+
     for category in category_dic:
         #페이지 1부터 ~ 끝까지 model_list를 긁음.
         currentPageNum = 1

@@ -134,8 +134,8 @@ def projectDownload(URL):
                                     print("\t\t\t파일명: " + fileName)
                                     print("\t\t\t" + fileURL + "\n")
 
-                                    print(" => ".join(filePath))
-                                    downloadFile(fileURL, fileName, filePath)
+                                    print("경로: " + " => ".join(filePath) + "\n")
+                                    #downloadFile(fileURL, fileName, filePath)
                             if(j==fileList[-1]):
                                 del filePath[-1]
                         del filePath[-1]
@@ -143,7 +143,6 @@ def projectDownload(URL):
 
         except(KeyError):
             pass
-
 
 def proejectScrapping(URL):
     soup = parsingWebpage(URL)
@@ -179,7 +178,6 @@ def one_page_crawling(soup):
             print("설명: ", i.text, "\n")
             proejectScrapping(projectLink)
             filePath = []
-            print("경로 초기화!")
 
         count = count + 1
 

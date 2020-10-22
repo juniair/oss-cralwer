@@ -2,7 +2,7 @@
 
 import urllib.request
 import requests
-import os, time
+import os, time, re
 from bs4 import BeautifulSoup
 from crawler.Decompresser import flatten
 
@@ -17,10 +17,15 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
+def cleanText(readData):
+    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    return text
+
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
+        i = cleanText(i)
         try:
             os.mkdir(i)
         except FileExistsError:
@@ -81,7 +86,7 @@ def apple_start_crawling():
                 count = count + 1
                 if count >= 90:                 #한번에 너무 받으면 접속차단되서 잠시 중단
                     print("10초간 휴식(접속차단 방지)")
-                    time.sleep(10)
+                    time.sleep(5)
 
                 for k in j.select("li"):
                     versionLink = baseURL + k.a['href']
