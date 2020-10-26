@@ -4,7 +4,7 @@ import urllib.request
 import requests
 import os, time, re
 from bs4 import BeautifulSoup
-from crawler.Decompresser import flatten
+from Decompresser import flatten
 
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Apple_Crawling"
 baseURL = "https://opensource.apple.com/"

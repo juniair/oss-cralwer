@@ -7,8 +7,10 @@ import urllib.request
 import requests
 import re, os
 from bs4 import BeautifulSoup
-from crawler.Decompresser import flatten
-from crawler import DataBase_Crawler_DB
+
+from Decompresser import flatten
+from crawler import DataBase_Crawler_DB, CrawlingInfo
+from datetime import datetime
 from worker import app
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
@@ -19,11 +21,11 @@ BaseFolderDirectory = os.path.expanduser("~") + os.sep +"LGE_Crawling"
 #카테고리 별 태그.
 category_dic = {
     "Mc011": "AV/Car/Security", "Mc014": "Appliances", "Mc024": "Commercial",
-    "Mc020": "Computer Product", "Mc001": "Mobile", "Mc005":"TV/Display", "Mc111": "ETC"
+    "Mc020": "Computer Product", "Mc001": "Mobile", "Mc005": "TV/Display", "Mc111": "ETC"
 }
 
 #URL 초기화 함수.
-def initialcategoryURL(pageNum=1, categoryName=category_dic["Mc011"]):
+def initialcategoryURL(pageNum, categoryName):
     categoryURL = '/osList/list?curPage=' + str(pageNum) + '&m=' + categoryName + '&s='
     print("URL 초기화: {}".format(baseURL + categoryURL))
     return baseURL + categoryURL
@@ -41,7 +43,7 @@ def cleanText(readData):
     return text
 
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수
-@app.task(autoretry_for=(Exception,))
+#@app.task(autoretry_for=(Exception,))
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
@@ -63,7 +65,7 @@ def downloadFile(url, file_name, path):
     opensourceFile.close()
 
 #화면의 Model List와 Software List중 하나를 긁어옴.
-def crawling_list(soup, mode):
+def crawling_list(soup, mode, currentURL):
     print("{} List 다운 시작.".format(mode))
     if(mode == "Model"):
         list = soup.find_all(id=re.compile(r'(modelRow([0-9])+)'))      # 각 프로젝트는 id가 modelRow로 시작해서 id 정규식으로 검색.
@@ -73,8 +75,11 @@ def crawling_list(soup, mode):
         print("모드 오류!")
         exit()
 
+    crawlerInfo = None
+
     Sub_category = ""
     Model = ""
+
     for i in list:
         filePath = []
         #하위 항목 출력
@@ -88,6 +93,8 @@ def crawling_list(soup, mode):
         filePath.append(Model)
         filePath.append(description)
         print(filePath)
+
+        createdOn = ''
 
         filedown_tagged = i.find_all(class_='filedown')     #라이선스와 소스코드 둘다 filedown이라는 클래스가 담긴 버튼을 통해서 다운 받는다.
         for j in filedown_tagged:
@@ -104,9 +111,23 @@ def crawling_list(soup, mode):
                 k = k.replace(" ", "%")
                 if (k == "op"): downloadLink = downloadLink + "Idx"
                 downloadLink = downloadLink + "/" + k
+
             print(downloadLink)
             print("파일명: {}\n".format(fileName))
-            #downloadFile(downloadLink, fileName, filePath)            #시스템 구축 안하고 돌리면 LG오픈소스 사이트에서 차단 먹이는 코드.
+            downloadFile(downloadLink, fileName, filePath)
+
+            createdOn = datetime.strptime(createdOn, "%Y-%m-%d").date()
+            crawlerInfo = CrawlingInfo(
+                crawlerName="LGEcrawler",
+                projectName=filePath[1],
+                summary=filePath[2],
+                createdOn=createdOn,
+                homepageUrl=currentURL,
+                category=filePath[0],
+                License="Unknown",
+            )
+            pid = crawlerInfo.project_db_insert()
+
     print("{} List 다운 완료.".format(mode))
 
 def LG_Crawling_Start():
@@ -118,15 +139,16 @@ def LG_Crawling_Start():
         #페이지 1부터 ~ 끝까지 model_list를 긁음.
         currentPageNum = 1
         while(1):
+            currentURL = initialcategoryURL(currentPageNum, category)
             #매번 다음 페이지 파싱.
-            currentPageSoup = parsingWebpage(initialcategoryURL(currentPageNum, category))
+            currentPageSoup = parsingWebpage(currentURL)
             isEndPage = currentPageSoup.select('.list-type-01 #modelTable .categoryView > tr > td')
 
             if (isEndPage[0].text == "No results"):
                 print("다음 카테고리로\n")
                 break
 
-            crawling_list(currentPageSoup, "Model")                             #모델 리스트 긁기
+            crawling_list(currentPageSoup, "Model", currentURL)                             #모델 리스트 긁기
 
             #다음 페이지로 넘기는 부분.
             currentPage = currentPageSoup.select('.paginate > span > strong')   #현재 페이지.
@@ -139,7 +161,8 @@ def LG_Crawling_Start():
             print("다음 페이지로.\n")
             currentPageNum += 1
 
-        crawling_list(currentPageSoup, "Software")                              #model_list를 다 긁고 난 뒤 software_list를 긁음.
+        currentURL = initialcategoryURL(1, category)
+        crawling_list(currentPageSoup, "Software", currentURL)                              #model_list를 다 긁고 난 뒤 software_list를 긁음.
 
 if __name__ == "__main__":
     try:

@@ -19,14 +19,19 @@ def extract_file(name, current_directory):
     if filename.endswith('.tar') or filename.endswith('.tar.xz') or filename.endswith('.tar.gz') or filename.endswith('.tgz'):
         with tarfile.open(filename) as tar:
             tar.extractall(current_directory)
+        os.remove(filename)
     elif filename.endswith('.zip'):
         with zipfile.ZipFile(filename) as z:
             z.extractall(current_directory)
+        os.remove(filename)
     elif filename.endswith('.7z'):
         with py7zr.SevenZipFile(filename, mode="r") as z:
             z.extractall(current_directory)
+        os.remove(filename)
     else:
         pass
+
+
 
 def flatten(target_file):
     if os.path.basename(target_file)[0]==".":
@@ -53,3 +58,4 @@ def flatten(target_file):
 
         for i in os.listdir(target_file):
            flatten(root_dir + os.sep + i)
+

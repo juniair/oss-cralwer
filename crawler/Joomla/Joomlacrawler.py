@@ -3,6 +3,7 @@
 import urllib.request
 import requests, os, re
 from bs4 import BeautifulSoup
+from Decompresser import flatten
 
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Joomla_Crawling"
 baseURL = "http://joomlacode.org"
