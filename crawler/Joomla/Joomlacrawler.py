@@ -4,11 +4,26 @@ import urllib.request
 import requests, os, re
 from bs4 import BeautifulSoup
 from Decompresser import flatten
+from crawler import DataBase_Crawler_DB, CrawlingInfo
 
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Joomla_Crawling"
 baseURL = "http://joomlacode.org"
-projectLink = ""
 filePath = []
+
+Info_dic = ""
+
+def init_Infodict():
+    global Info_dic
+    Info_dic= {
+        "crawlerName": "Joomlacrawler",
+        "homepageUrl": "",
+        "developer": "",
+        "projectName": "",
+        "summary": "",
+        "License": "",
+        "programmingLanguage": ""
+    }
+
 
 #URL 초기화 함수.
 def initialcategoryURL(pageNum):
@@ -69,12 +84,21 @@ def projectDownload(URL):
     global filePath
     soup = parsingWebpage(URL)
 
+    crawlerInfo = CrawlingInfo(
+        crawlerName=Info_dic["crawlerName"],
+        homepageUrl=Info_dic["homepageUrl"],
+        developer=Info_dic["developer"],
+        projectName=Info_dic["projectName"],
+        summary=Info_dic["summary"],
+        License=Info_dic["License"],
+        programmingLanguage=Info_dic["programmingLanguage"],
+    )
+    crawlerInfo.project_db_insert()
+
     #파일에 문제 있는 것들 걸러내기
     if proejctDetect(soup) is False:
-        print("반출!!")
         #아무것도 받지 않은 프로젝트는 폴더 생성하지 않기
         filePath = []
-        print("경로 초기화!")
         return
 
     #여기다 파일 식별하고 다운받는 코드 작성.
@@ -84,8 +108,7 @@ def projectDownload(URL):
     packageDetect = soup.select(".tabular > .l > td, .tabular > .d > td")
 
     for i in packageDetect:
-        # 패키지하고 최신파일 출력
-        try:
+        try:                                 # 패키지하고 최신파일 출력
             if(i['rowspan'] is not None):
                 if toggle == 0:
                     #패키지 폴더 생성을 위한 배열 추가.
@@ -104,10 +127,12 @@ def projectDownload(URL):
                     if (rowspan == 0):
                         print("\t최근 릴리즈: " + ', '.join(releaseList))
                         toggle = 0
+                        paramNum = 0
                         releaseList=[]
 
                         # 패키지에 있는 여러 버전들 스크래핑, 다운로드
                         for j in fileList:
+                            paramNum+=1
                             try:
                                 if (j['rowspan'] is not None):
                                     if sec_toggle == 0:
@@ -116,12 +141,14 @@ def projectDownload(URL):
 
                                         releaseName = j.a.text.strip()
                                         filePath.append(releaseName)
+                                        projectUrl = baseURL+j.a['href']
                                         print("\t\t릴리즈명: " + releaseName)
                                         sec_toggle = 1
                                         fileParam = 0
 
                                     else:
                                         print("\t\t릴리즈 날짜: " + j.text + "\n")
+                                        createdOn = j.text.split(" ")[0]
                                         sec_toggle = 0
 
                             # 파일들이 있는 곳.
@@ -136,11 +163,14 @@ def projectDownload(URL):
                                     print("\t\t\t" + fileURL + "\n")
 
                                     print("경로: " + " => ".join(filePath) + "\n")
-                                    #downloadFile(fileURL, fileName, filePath)
-                            if(j==fileList[-1]):
+                                    downloadFile(fileURL, fileName, filePath)
+
+                                    file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
+                                    fileInfo = [file_dir, filePath[2], createdOn]
+                                    crawlerInfo.project_file_db_insert(fileInfo)
+                            if(paramNum==len(fileList)):
                                 del filePath[-1]
                         del filePath[-1]
-
 
         except(KeyError):
             pass
@@ -152,37 +182,59 @@ def proejectScrapping(URL):
         for j in infoList:
             try:
                 if j[0] == "L":
-                    print("=====\n라이선스: ", j[9:])
+                    LicenseName = j[9:]
+                    print("=====\n라이선스: ", LicenseName)
+                    # 프로젝트 정보: 라이선스 입력
+                    Info_dic["License"] = LicenseName
 
                 elif j[0] == "P":
-                    print("프로그래밍 언어 ", j[22:] + "\n-----------------------------------------------")
+                    PLang=j[22:]
+                    print("프로그래밍 언어 ", PLang + "\n-----------------------------------------------")
+                    # 프로젝트 정보: 프로그래밍 언어 입력
+                    Info_dic["programmingLanguage"] = PLang
 
             except IndexError:
                 pass
     projectDownload(URL + "frs")
 
 def one_page_crawling(soup):
-    global filePath
+    global filePath, Info_dic
     count = 0
+
     for i in soup.find_all("td", {"valign": "middle"}):
+        init_Infodict()
         if count % 3 ==0:
-            projectLink = baseURL + i.find("a").attrs['href']
-            print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n"+projectLink)
+            homepageUrl = baseURL + i.find("a").attrs['href']
+            homepageUrl = "http://joomlacode.org/gf/project/yvsmiley/"
+            print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n" + homepageUrl)
 
             #프로젝트 폴더 생성을 위한 추가.
             projectName = i.text.strip()
             filePath.append(projectName)
             print("프로젝트명: ", projectName)
         elif count % 3 == 1:
+            developer = i.text
             print("업로더: ", i.text)
         elif count % 3 == 2:
+            summary = i.text
             print("설명: ", i.text, "\n")
-            proejectScrapping(projectLink)
+            #프로젝트 정보: 프로젝트URL/개발자/프로젝트 이름/설명 입력
+            Info_dic["homepageUrl"] = homepageUrl
+            Info_dic["developer"] = developer
+            Info_dic["projectName"] = projectName
+            Info_dic["summary"] = summary
+
+            proejectScrapping(homepageUrl)
+
             filePath = []
 
         count = count + 1
 
 def joomla_crawling_start():
+    DataBase_Crawler_DB(
+        crawlerName="Joomlacrawler",
+        crawlerStatus='1').crawler_db_insert()
+
     currentPageNum = 1
     while (1):
         # 매번 다음 페이지 파싱.
@@ -199,6 +251,10 @@ def joomla_crawling_start():
         print("현재 페이지: {}".format(currentPage))
         print("다음 페이지로.\n")
         currentPageNum += 1
+
+    DataBase_Crawler_DB(
+        crawlerName="Joomlacrawler",
+        crawlerStatus='0').crawler_db_insert()
 
 if __name__ == "__main__":
     try:

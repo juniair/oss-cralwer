@@ -94,7 +94,16 @@ def crawling_list(soup, mode, currentURL):
         filePath.append(description)
         print(filePath)
 
-        createdOn = ''
+        crawlerInfo = CrawlingInfo(
+            crawlerName="LGEcrawler",
+            projectName=filePath[1],
+            summary=filePath[2],
+            homepageUrl=currentURL,
+            category=filePath[0],
+            License="Unknown",
+            programmingLanguage=None
+        )
+        crawlerInfo.project_db_insert()
 
         filedown_tagged = i.find_all(class_='filedown')     #라이선스와 소스코드 둘다 filedown이라는 클래스가 담긴 버튼을 통해서 다운 받는다.
         for j in filedown_tagged:
@@ -106,7 +115,7 @@ def crawling_list(soup, mode, currentURL):
 
             #filedown태그를 통해서 라이센스와 소스코드 다운링크를 볼 수 있음. onclick으로부터 다운로드 링크를 추출함.
             linkParam = j['onclick'][linkStart + 2:-2].replace("'", "").split(", ")
-            #print(linkParam)                                #잘 들어갔는 지 검사용.
+
             for k in linkParam:                             #라이선스인 li와 소스코드인 op의 다운로드 링크 포맷이 달라서 이렇게 만듦.
                 k = k.replace(" ", "%")
                 if (k == "op"): downloadLink = downloadLink + "Idx"
@@ -116,17 +125,11 @@ def crawling_list(soup, mode, currentURL):
             print("파일명: {}\n".format(fileName))
             downloadFile(downloadLink, fileName, filePath)
 
-            createdOn = datetime.strptime(createdOn, "%Y-%m-%d").date()
-            crawlerInfo = CrawlingInfo(
-                crawlerName="LGEcrawler",
-                projectName=filePath[1],
-                summary=filePath[2],
-                createdOn=createdOn,
-                homepageUrl=currentURL,
-                category=filePath[0],
-                License="Unknown",
-            )
-            pid = crawlerInfo.project_db_insert()
+            if(downloadLink[-2:]=="/1"):
+                file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
+                print(file_dir)
+                fileInfo = [file_dir,filePath[2],None]
+                crawlerInfo.project_file_db_insert(fileInfo)
 
     print("{} List 다운 완료.".format(mode))
 
@@ -163,6 +166,10 @@ def LG_Crawling_Start():
 
         currentURL = initialcategoryURL(1, category)
         crawling_list(currentPageSoup, "Software", currentURL)                              #model_list를 다 긁고 난 뒤 software_list를 긁음.
+
+    DataBase_Crawler_DB(
+        crawlerName="LGEcrawler",
+        crawlerStatus='0').crawler_db_insert()
 
 if __name__ == "__main__":
     try:
