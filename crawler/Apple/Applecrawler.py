@@ -19,7 +19,7 @@ def parsingWebpage(URL):
     return soup
 
 def cleanText(readData):
-    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    text = re.sub('[\\\\/:*?\"<>|]', '', readData)
     return text
 
 def downloadFile(url, file_name, path):
@@ -110,6 +110,7 @@ def apple_start_crawling():
                         crawlerName="Applecrawler",
                         projectName=detailversion,
                         homepageUrl=versionLink,
+                        developer="Apple Inc.",
                         category=product_name,
                         License="Unknown",
                     )

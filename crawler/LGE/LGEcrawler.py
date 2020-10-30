@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 from Decompresser import flatten
 from crawler import DataBase_Crawler_DB, CrawlingInfo
 from datetime import datetime
-from worker import app
+#from worker import app
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
 hdr = {'User_Agent': 'Mozilla/5.0'}
@@ -39,7 +39,7 @@ def parsingWebpage(URL):
 
 # 텍스트에 포함되어 있는 특수 문자 제거
 def cleanText(readData):
-    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    text = re.sub('[\\\\/:*?\"<>|]', '', readData)
     return text
 
 #home경로에 폴더를 만들고 카테고리별로 폴더를 만들어서, URL을 POST로 요청하여 file_name으로 받는 다운로드 함수

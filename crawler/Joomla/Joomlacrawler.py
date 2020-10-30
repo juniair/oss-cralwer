@@ -39,14 +39,14 @@ def parsingWebpage(URL):
 
 # 텍스트에 포함되어 있는 특수 문자 제거
 def cleanText(readData):
-    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    text = re.sub('[\\\\/:*?\"<>|]', '', readData)
     return text
 
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
-        i = cleanText(i)
+        i = cleanText(i).strip()
         try:
             os.mkdir(i)
         except FileExistsError:
@@ -205,7 +205,7 @@ def one_page_crawling(soup):
         init_Infodict()
         if count % 3 ==0:
             homepageUrl = baseURL + i.find("a").attrs['href']
-            homepageUrl = "http://joomlacode.org/gf/project/yvsmiley/"
+
             print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n" + homepageUrl)
 
             #프로젝트 폴더 생성을 위한 추가.
