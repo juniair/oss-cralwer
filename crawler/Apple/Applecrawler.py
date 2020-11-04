@@ -2,7 +2,7 @@
 
 import urllib.request
 import requests
-import os, time, re
+import os, re, time
 from bs4 import BeautifulSoup
 from Decompresser import flatten
 from crawler import DataBase_Crawler_DB, CrawlingInfo
@@ -67,7 +67,7 @@ def one_versionCrawl(URL, filePath, crawlerInfo):
         #     print("\t\t\t파일이 이미 있네요.")
         #     continue
 
-        downloadFile(fileDownloadURL, fileName+".tag.gz", filePath)
+        downloadFile(fileDownloadURL, fileName+".tar.gz", filePath)
         file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
         fileInfo = [file_dir, fileName.split("-")[-1], None]
         crawlerInfo.project_file_db_insert(fileInfo)
@@ -84,7 +84,6 @@ def apple_start_crawling():
         product_name = i.select_one("h3").text
         print("\n제품 명: " + product_name)
         filePath.append(product_name)
-        count = 0
 
         for j in i.select(".release-list-button > span, ul"):
             tagIdentify = j.get('id').split("-")[0]                 #버전과 하위 버전을 구분하기 위한 id 추출.
@@ -92,11 +91,12 @@ def apple_start_crawling():
             if tagIdentify == "list":
                 print("\t\t버전 명:", j.text + "\n\t\t▼하위 태그들▼")
                 filePath.append(j.text)
+                count = 0
 
             elif tagIdentify == "release":
-                count = count + 1
-                if count >= 90:                 #한번에 너무 받으면 접속차단되서 잠시 중단
-                    print("10초간 휴식(접속차단 방지)")
+                count += 1
+                if count >= 90:
+                    print("5초간 휴식(접속 차단 방지)")
                     time.sleep(5)
                     count = 0
 
@@ -113,6 +113,7 @@ def apple_start_crawling():
                         developer="Apple Inc.",
                         category=product_name,
                         License="Unknown",
+                        programmingLanguage=None
                     )
                     crawlerInfo.project_db_insert()
 

@@ -39,7 +39,7 @@ def parsingWebpage(URL):
 
 # 텍스트에 포함되어 있는 특수 문자 제거
 def cleanText(readData):
-    text = re.sub('[\\\\/:*?\"<>|]', '', readData)
+    text = re.sub('[\\\\/:*?\"<>|\t]', '', readData)
     return text
 
 def downloadFile(url, file_name, path):
@@ -263,3 +263,4 @@ if __name__ == "__main__":
         pass
     joomla_crawling_start()
     flatten(BaseFolderDirectory)
+    print("Joomlacrawling 작업 완료")
