@@ -5,9 +5,9 @@
 import sys
 import urllib.request
 import requests
-import re, os
+import re, os, time
 from bs4 import BeautifulSoup
-
+sys.path.append("..")
 from Decompresser import flatten
 from crawler import DataBase_Crawler_DB, CrawlingInfo
 from datetime import datetime
@@ -123,7 +123,15 @@ def crawling_list(soup, mode, currentURL):
 
             print(downloadLink)
             print("파일명: {}\n".format(fileName))
-            downloadFile(downloadLink, fileName, filePath)
+            while (True):
+                try:
+                    downloadFile(downloadLink, fileName, filePath)
+                    break
+                except:
+                    print(downloadLink + "에서 오류 발생. 휴식 후 재가동.")
+                    time.sleep(60)
+                    pass
+
 
             if(downloadLink[-2:]=="/1"):
                 file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
@@ -176,5 +184,6 @@ if __name__ == "__main__":
         os.mkdir(BaseFolderDirectory)
     except FileExistsError:
         pass
+
     LG_Crawling_Start()
     flatten(BaseFolderDirectory)
