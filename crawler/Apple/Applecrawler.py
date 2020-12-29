@@ -9,13 +9,16 @@ import time
 import sys
 sys.path.append("..")
 from bs4 import BeautifulSoup
-from Decompresser import flatten
-from crawler import DataBase_Crawler_DB, CrawlingInfo
+from crawler.filechecking import *
+#from Decompresser import flatten
+#from crawler import DataBase_Crawler_DB, CrawlingInfo
 
-BaseFolderDirectory = "/HDD2/temp_crawler/new_crawling" + os.sep + "Apple_Crawling"
+BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Apple_Crawling"
 baseURL = "https://opensource.apple.com"
 isExist = []
 
+searchMode = 0
+breakedPoint = ""
 
 def parsingWebpage(URL):
     WebpageURL = URL
@@ -49,7 +52,9 @@ def downloadFile(url, file_name, path):
 # 버전 하나 (1.5.6 이런 상세버전) 크롤링하는 곳.
 
 
-def one_versionCrawl(URL, filePath, crawlerInfo):
+def one_versionCrawl(URL, filePath):       #, crawlerInfo):
+    global searchMode, breakedPoint
+
     try:
         soup = parsingWebpage(URL)
     except urllib.error.HTTPError:
@@ -64,6 +69,12 @@ def one_versionCrawl(URL, filePath, crawlerInfo):
         except TypeError:  # 파일명만 있고 coming soon!이라면서 파일 다운로드 키가 없는 경우가 있음.
             continue
 
+        if searchMode == "1":
+            if breakedPoint[1] != fileName:
+                continue
+            else:
+                searchMode = 0
+
         print("\t\t\t\t" + fileName)
         print("\t\t\t\t" + fileURL)
 
@@ -74,26 +85,39 @@ def one_versionCrawl(URL, filePath, crawlerInfo):
     # else:
     #     print("\t\t\t파일이 이미 있네요.")
     #     continue
-
-        downloadFile(fileURL, fileName+".tar.gz", filePath)
+        try:
+            downloadFile(fileURL, fileName+".tar.gz", filePath)
+        except:
+            writingLog(BaseFolderDirectory, "Apple_Crawling", filePath[2], fileName)
 
         file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
         fileInfo = [file_dir, fileName.split("-")[-1], None]
-        crawlerInfo.project_file_db_insert(fileInfo)
+        #crawlerInfo.project_file_db_insert(fileInfo)
 
 # 홈페이지에서 버전별로 받는 코드.
 
 
 def apple_start_crawling():
-    DataBase_Crawler_DB(  # 크롤링 시작
-        crawlerName="Applecrawler",
-        crawlerStatus='1').crawler_db_insert()
+    global breakedPoint, searchMode
+    # 중간에 끊겼는지 검사
+    print("중간 파일 검사\n")
+    breakedPoint = breakcheck(BaseFolderDirectory, "Apple_Crawling")
+    if breakedPoint != False:
+        global searchMode
+        searchMode = 1
+        print("끊김 파일 있음. 지점: {}\n".format(breakedPoint))
+    else:
+        print("끊김 파일 없음.\n")
+
+    # DataBase_Crawler_DB(  # 크롤링 시작
+    #     crawlerName="Applecrawler",
+    #     crawlerStatus='1').crawler_db_insert()
 
     soup = parsingWebpage(baseURL)
     for i in soup.find_all(class_="product release-list"):
         filePath = []
         product_name = i.select_one("h3").text
-        print("\n제품 명: " + product_name)
+        print("\n제품명: " + product_name)
         filePath.append(product_name)
 
         for j in i.select(".release-list-button > span, ul"):
@@ -115,37 +139,37 @@ def apple_start_crawling():
                 for k in j.select("li"):
                     versionLink = baseURL + k.a['href']
                     detailversion = k.a.text
-                    print("\t\t\t" + detailversion +
-                          "\n\t\t\t링크: " + versionLink + "\n")
-                    filePath.append(detailversion)
-                    crawlerInfo = CrawlingInfo(
-                        crawlerName="Applecrawler",
-                        projectName=detailversion,
-                        homepageUrl=versionLink,
-                        developer="Apple Inc.",
-                        category=product_name,
-                        License="Unknown",
-                        programmingLanguage=None
-                    )
-                    crawlerInfo.project_db_insert()
+                    if searchMode == 1:
+                        if breakedPoint[0] != detailversion:
+                            continue
 
-                    while(True):
-                        try:
-                            one_versionCrawl(
-                                versionLink, filePath, crawlerInfo)
-                            break
-                        except:
-                            print(versionLink + "에서 오류 발생. 휴식 후 재가동.")
-                            time.sleep(60)
-                            pass
+                    print("\t\t\t" + detailversion + "\n\t\t\t링크: " + versionLink + "\n")
+                    filePath.append(detailversion)
+                    # crawlerInfo = CrawlingInfo(
+                    #     crawlerName="Applecrawler",
+                    #     projectName=detailversion,
+                    #     homepageUrl=versionLink,
+                    #     developer="Apple Inc.",
+                    #     category=product_name,
+                    #     License="Unknown",
+                    #     programmingLanguage=None
+                    # )
+                    # crawlerInfo.project_db_insert()
+
+                    #try:
+                    one_versionCrawl(versionLink, filePath)#, crawlerInfo)
+                    # except:
+                    #     print(versionLink + "에서 오류 발생. 휴식 후 재가동.")
+                    #     time.sleep(60)
+                    #     pass
 
                     del filePath[-1]
                 del filePath[-1]
                 print("\t\t▲▲▲▲▲▲▲▲")
 
-    DataBase_Crawler_DB(  # 크롤링 종료
-        crawlerName="Applecrawler",
-        crawlerStatus='0').crawler_db_insert()
+    # DataBase_Crawler_DB(  # 크롤링 종료
+    #     crawlerName="Applecrawler",
+    #     crawlerStatus='0').crawler_db_insert()
 
 
 if __name__ == "__main__":
@@ -154,4 +178,4 @@ if __name__ == "__main__":
     except FileExistsError:
         pass
     apple_start_crawling()
-    flatten(BaseFolderDirectory)
+    #flatten(BaseFolderDirectory)

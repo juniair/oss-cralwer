@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 sys.path.append("..")
 from Decompresser import flatten
 from crawler import DataBase_Crawler_DB, CrawlingInfo
+from crawler.filechecking import *
 
 BaseFolderDirectory = "/HDD2/temp_crawler/new_crawling" + os.sep + "Joomla_Crawling"
 baseURL = "http://joomlacode.org"
@@ -13,6 +14,8 @@ filePath = []
 
 Info_dic = ""
 
+searchMode = 0
+breakedPoint = ""
 
 def init_Infodict():
     global Info_dic
@@ -170,6 +173,12 @@ def projectDownload(URL):
                                     print("\t\t\t" + fileURL + "\n")
 
                                     print("경로: " + " => ".join(filePath) + "\n")
+                                    if searchMode == "1":
+                                        if breakedPoint[1] != fileName:
+                                            continue
+                                        else:
+                                            searchMode = 0
+
                                     downloadFile(fileURL, fileName, filePath)
 
                                     file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
@@ -207,7 +216,7 @@ def proejectScrapping(URL):
 
 
 def one_page_crawling(soup):
-    global filePath, Info_dic
+    global filePath, Info_dic, breakedPoint, searchMode
     count = 0
 
     for i in soup.find_all("td", {"valign": "middle"}):
@@ -233,6 +242,11 @@ def one_page_crawling(soup):
             Info_dic["projectName"] = projectName
             Info_dic["summary"] = summary
 
+            if searchMode == 1:
+                if breakedPoint[0] != projectName:
+                    filePath = []
+                    continue
+
             proejectScrapping(homepageUrl)
 
             filePath = []
@@ -241,6 +255,16 @@ def one_page_crawling(soup):
 
 
 def joomla_crawling_start():
+    global breakedPoint, searchMode
+    # 중간에 끊겼는지 검사
+    print("중간 파일 검사\n")
+    breakedPoint = breakcheck(BaseFolderDirectory, "Joomla_Crawling")
+    if breakedPoint != False:
+        searchMode = 1
+        print("끊김 파일 있음. 지점: {}\n".format(breakedPoint))
+    else:
+        print("끊김 파일 없음.\n")
+
     DataBase_Crawler_DB(
         crawlerName="Joomlacrawler",
         crawlerStatus='1').crawler_db_insert()
@@ -272,6 +296,6 @@ if __name__ == "__main__":
         os.mkdir(BaseFolderDirectory)
     except FileExistsError:
         pass
-    # joomla_crawling_start()
+    joomla_crawling_start()
     flatten(BaseFolderDirectory)
     print("Joomlacrawling 작업 완료")
