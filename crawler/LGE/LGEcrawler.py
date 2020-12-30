@@ -8,11 +8,9 @@ import requests
 import re, os, time
 sys.path.append("..")
 from bs4 import BeautifulSoup
-from crawler.filechecking import *
-#sys.path.append("..")
-#from Decompresser import flatten
-#from crawler import DataBase_Crawler_DB, CrawlingInfo
-from datetime import datetime
+from filechecking import *
+from Decompresser import flatten
+from crawler import DataBase_Crawler_DB, CrawlingInfo
 #from worker import app
 
 #초기 설정. 나중에 토르 브라우저에 랜덤환경변수로 설정해야한다고 하심.
@@ -106,16 +104,16 @@ def crawling_list(soup, mode, currentURL):
 
         print(filePath)
 
-        # crawlerInfo = CrawlingInfo(
-        #     crawlerName="LGEcrawler",
-        #     projectName=filePath[1],
-        #     summary=filePath[2],
-        #     homepageUrl=currentURL,
-        #     category=filePath[0],
-        #     License="Unknown",
-        #     programmingLanguage=None
-        # )
-        #crawlerInfo.project_db_insert()
+        crawlerInfo = CrawlingInfo(
+            crawlerName="LGEcrawler",
+            projectName=filePath[1],
+            summary=filePath[2],
+            homepageUrl=currentURL,
+            category=filePath[0],
+            License="Unknown",
+            programmingLanguage=None
+        )
+        crawlerInfo.project_db_insert()
 
         filedown_tagged = i.find_all(class_='filedown')     #라이선스와 소스코드 둘다 filedown이라는 클래스가 담긴 버튼을 통해서 다운 받는다.
         for j in filedown_tagged:
@@ -153,7 +151,7 @@ def crawling_list(soup, mode, currentURL):
                 file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
                 print(file_dir)
                 fileInfo = [file_dir,filePath[2],None]
-                #crawlerInfo.project_file_db_insert(fileInfo)
+                crawlerInfo.project_file_db_insert(fileInfo)
 
     print("{} List 다운 완료.".format(mode))
 
@@ -168,9 +166,9 @@ def LG_Crawling_Start():
     else:
         print("끊김 파일 없음.\n")
         
-    # DataBase_Crawler_DB(
-    #     crawlerName="LGEcrawler",
-    #     crawlerStatus='1').crawler_db_insert()
+    DataBase_Crawler_DB(
+        crawlerName="LGEcrawler",
+        crawlerStatus='1').crawler_db_insert()
         
     for category in category_dic:
         #페이지 1부터 ~ 끝까지 model_list를 긁음.
@@ -201,9 +199,9 @@ def LG_Crawling_Start():
         currentURL = initialcategoryURL(1, category)
         crawling_list(currentPageSoup, "Software", currentURL)                              #model_list를 다 긁고 난 뒤 software_list를 긁음.
 
-    # DataBase_Crawler_DB(
-    #     crawlerName="LGEcrawler",
-    #     crawlerStatus='0').crawler_db_insert()
+    DataBase_Crawler_DB(
+        crawlerName="LGEcrawler",
+        crawlerStatus='0').crawler_db_insert()
 
 if __name__ == "__main__":
     try:
@@ -212,4 +210,4 @@ if __name__ == "__main__":
         pass
 
     LG_Crawling_Start()
-    #flatten(BaseFolderDirectory)
+    flatten(BaseFolderDirectory)

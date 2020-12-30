@@ -9,9 +9,9 @@ import time
 import sys
 sys.path.append("..")
 from bs4 import BeautifulSoup
-from crawler.filechecking import *
-#from Decompresser import flatten
-#from crawler import DataBase_Crawler_DB, CrawlingInfo
+from filechecking import *
+from Decompresser import flatten
+from crawler import DataBase_Crawler_DB, CrawlingInfo
 
 BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Apple_Crawling"
 baseURL = "https://opensource.apple.com"
@@ -26,11 +26,9 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
-
 def cleanText(readData):
     text = re.sub('[\\\\/:*?\"<>|]', '', readData)
     return text
-
 
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
@@ -50,9 +48,7 @@ def downloadFile(url, file_name, path):
         file.write(response.content)
 
 # 버전 하나 (1.5.6 이런 상세버전) 크롤링하는 곳.
-
-
-def one_versionCrawl(URL, filePath):       #, crawlerInfo):
+def one_versionCrawl(URL, filePath, crawlerInfo):
     global searchMode, breakedPoint
 
     try:
@@ -85,6 +81,7 @@ def one_versionCrawl(URL, filePath):       #, crawlerInfo):
     # else:
     #     print("\t\t\t파일이 이미 있네요.")
     #     continue
+
         try:
             downloadFile(fileURL, fileName+".tar.gz", filePath)
         except:
@@ -92,11 +89,9 @@ def one_versionCrawl(URL, filePath):       #, crawlerInfo):
 
         file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
         fileInfo = [file_dir, fileName.split("-")[-1], None]
-        #crawlerInfo.project_file_db_insert(fileInfo)
+        crawlerInfo.project_file_db_insert(fileInfo)
 
 # 홈페이지에서 버전별로 받는 코드.
-
-
 def apple_start_crawling():
     global breakedPoint, searchMode
     # 중간에 끊겼는지 검사
@@ -109,9 +104,9 @@ def apple_start_crawling():
     else:
         print("끊김 파일 없음.\n")
 
-    # DataBase_Crawler_DB(  # 크롤링 시작
-    #     crawlerName="Applecrawler",
-    #     crawlerStatus='1').crawler_db_insert()
+    DataBase_Crawler_DB(  # 크롤링 시작
+        crawlerName="Applecrawler",
+        crawlerStatus='1').crawler_db_insert()
 
     soup = parsingWebpage(baseURL)
     for i in soup.find_all(class_="product release-list"):
@@ -145,31 +140,26 @@ def apple_start_crawling():
 
                     print("\t\t\t" + detailversion + "\n\t\t\t링크: " + versionLink + "\n")
                     filePath.append(detailversion)
-                    # crawlerInfo = CrawlingInfo(
-                    #     crawlerName="Applecrawler",
-                    #     projectName=detailversion,
-                    #     homepageUrl=versionLink,
-                    #     developer="Apple Inc.",
-                    #     category=product_name,
-                    #     License="Unknown",
-                    #     programmingLanguage=None
-                    # )
-                    # crawlerInfo.project_db_insert()
+                    crawlerInfo = CrawlingInfo(
+                        crawlerName="Applecrawler",
+                        projectName=detailversion,
+                        homepageUrl=versionLink,
+                        developer="Apple Inc.",
+                        category=product_name,
+                        License="Unknown",
+                        programmingLanguage=None
+                    )
+                    crawlerInfo.project_db_insert()
 
-                    #try:
-                    one_versionCrawl(versionLink, filePath)#, crawlerInfo)
-                    # except:
-                    #     print(versionLink + "에서 오류 발생. 휴식 후 재가동.")
-                    #     time.sleep(60)
-                    #     pass
+                    one_versionCrawl(versionLink, filePath, crawlerInfo)
 
                     del filePath[-1]
                 del filePath[-1]
                 print("\t\t▲▲▲▲▲▲▲▲")
 
-    # DataBase_Crawler_DB(  # 크롤링 종료
-    #     crawlerName="Applecrawler",
-    #     crawlerStatus='0').crawler_db_insert()
+    DataBase_Crawler_DB(  # 크롤링 종료
+        crawlerName="Applecrawler",
+        crawlerStatus='0').crawler_db_insert()
 
 
 if __name__ == "__main__":
@@ -178,4 +168,4 @@ if __name__ == "__main__":
     except FileExistsError:
         pass
     apple_start_crawling()
-    #flatten(BaseFolderDirectory)
+    flatten(BaseFolderDirectory)

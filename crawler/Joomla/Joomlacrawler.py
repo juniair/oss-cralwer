@@ -4,9 +4,9 @@ import urllib.request
 import requests, os, re, sys
 from bs4 import BeautifulSoup
 sys.path.append("..")
+from filechecking import *
 from Decompresser import flatten
 from crawler import DataBase_Crawler_DB, CrawlingInfo
-from crawler.filechecking import *
 
 BaseFolderDirectory = "/HDD2/temp_crawler/new_crawling" + os.sep + "Joomla_Crawling"
 baseURL = "http://joomlacode.org"
@@ -173,6 +173,8 @@ def projectDownload(URL):
                                     print("\t\t\t" + fileURL + "\n")
 
                                     print("경로: " + " => ".join(filePath) + "\n")
+                                    
+                                    #판별
                                     if searchMode == "1":
                                         if breakedPoint[1] != fileName:
                                             continue
