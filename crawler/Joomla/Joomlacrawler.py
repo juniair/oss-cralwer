@@ -1,19 +1,41 @@
 # -*- coding: utf-8 -*-
 
 import urllib.request
-import requests, os, re
+import requests, os, re, sys
 from bs4 import BeautifulSoup
+sys.path.append("..")
+from filechecking import *
+from Decompresser import flatten
+from crawler import DataBase_Crawler_DB, CrawlingInfo
 
-BaseFolderDirectory = os.path.expanduser("~") + os.sep + "Joomla_Crawling"
+BaseFolderDirectory = "/HDD2/temp_crawler/new_crawling" + os.sep + "Joomla_Crawling"
 baseURL = "http://joomlacode.org"
-projectLink = ""
 filePath = []
 
-#URL 초기화 함수.
+Info_dic = ""
+
+searchMode = 0
+breakedPoint = ""
+
+def init_Infodict():
+    global Info_dic
+    Info_dic = {
+        "crawlerName": "Joomlacrawler",
+        "homepageUrl": "",
+        "developer": "",
+        "projectName": "",
+        "summary": "",
+        "License": "",
+        "programmingLanguage": ""
+    }
+
+
+# URL 초기화 함수.
 def initialcategoryURL(pageNum):
     NumPage = baseURL + "/gf/project/?action=&_project_total=50&_project_page=" + str(pageNum)
     print("URL 초기화: {}".format(NumPage))
     return NumPage
+
 
 def parsingWebpage(URL):
     WebpageURL = URL
@@ -21,16 +43,18 @@ def parsingWebpage(URL):
     soup = BeautifulSoup(html, 'html.parser')
     return soup
 
+
 # 텍스트에 포함되어 있는 특수 문자 제거
 def cleanText(readData):
-    text = re.sub('[+,#/\?:^$@*\"※~&%ㆍ\\‘|\(\)\[\]\<\>`\'…》]', '', readData)
+    text = re.sub('[\\\\/:*?\"<>|\t]', '', readData)
     return text
+
 
 def downloadFile(url, file_name, path):
     savePath = BaseFolderDirectory
     os.chdir(savePath)
     for i in path:
-        i = cleanText(i)
+        i = cleanText(i).strip()
         try:
             os.mkdir(i)
         except FileExistsError:
@@ -42,7 +66,8 @@ def downloadFile(url, file_name, path):
         response = requests.get(url)
         file.write(response.content)
 
-#다운로드 할 파일이 있는지 검출해주는 함수
+
+# 다운로드 할 파일이 있는지 검출해주는 함수
 def proejctDetect(soup):
     packageDetect = lambda x: x == 'No Packages Were Found'
     availableFileDetect = lambda x: x[-41:] == 'No available files found for this package'
@@ -64,30 +89,39 @@ def proejctDetect(soup):
             return False
     return True
 
+
 def projectDownload(URL):
     global filePath
     soup = parsingWebpage(URL)
 
-    #파일에 문제 있는 것들 걸러내기
+    crawlerInfo = CrawlingInfo(
+        crawlerName=Info_dic["crawlerName"],
+        homepageUrl=Info_dic["homepageUrl"],
+        developer=Info_dic["developer"],
+        projectName=Info_dic["projectName"],
+        summary=Info_dic["summary"],
+        License=Info_dic["License"],
+        programmingLanguage=Info_dic["programmingLanguage"],
+    )
+    crawlerInfo.project_db_insert()
+
+    # 파일에 문제 있는 것들 걸러내기
     if proejctDetect(soup) is False:
-        print("반출!!")
-        #아무것도 받지 않은 프로젝트는 폴더 생성하지 않기
+        # 아무것도 받지 않은 프로젝트는 폴더 생성하지 않기
         filePath = []
-        print("경로 초기화!")
         return
 
-    #여기다 파일 식별하고 다운받는 코드 작성.
+    # 여기다 파일 식별하고 다운받는 코드 작성.
     toggle = sec_toggle = 0
     releaseList = []
 
     packageDetect = soup.select(".tabular > .l > td, .tabular > .d > td")
 
     for i in packageDetect:
-        # 패키지하고 최신파일 출력
-        try:
-            if(i['rowspan'] is not None):
+        try:  # 패키지하고 최신파일 출력
+            if (i['rowspan'] is not None):
                 if toggle == 0:
-                    #패키지 폴더 생성을 위한 배열 추가.
+                    # 패키지 폴더 생성을 위한 배열 추가.
                     packageName = i.text.strip()
                     filePath.append(packageName)
                     print("\n\t패키지명: " + packageName)
@@ -96,17 +130,19 @@ def projectDownload(URL):
                     rowspan = int(i['rowspan'])
                     print("\t" + baseURL + i.a['href'])
                     fileList = parsingWebpage(baseURL + i.a['href']).select(".tabular > .l > td, .tabular > .d > td")
-                    
+
                 else:
                     releaseList.append(i.text)
                     rowspan -= int(i['rowspan'])
                     if (rowspan == 0):
                         print("\t최근 릴리즈: " + ', '.join(releaseList))
                         toggle = 0
-                        releaseList=[]
+                        paramNum = 0
+                        releaseList = []
 
                         # 패키지에 있는 여러 버전들 스크래핑, 다운로드
                         for j in fileList:
+                            paramNum += 1
                             try:
                                 if (j['rowspan'] is not None):
                                     if sec_toggle == 0:
@@ -115,12 +151,14 @@ def projectDownload(URL):
 
                                         releaseName = j.a.text.strip()
                                         filePath.append(releaseName)
+                                        projectUrl = baseURL + j.a['href']
                                         print("\t\t릴리즈명: " + releaseName)
                                         sec_toggle = 1
                                         fileParam = 0
 
                                     else:
                                         print("\t\t릴리즈 날짜: " + j.text + "\n")
+                                        createdOn = j.text.split(" ")[0]
                                         sec_toggle = 0
 
                             # 파일들이 있는 곳.
@@ -134,12 +172,23 @@ def projectDownload(URL):
                                     print("\t\t\t파일명: " + fileName)
                                     print("\t\t\t" + fileURL + "\n")
 
-                                    print(" => ".join(filePath))
+                                    print("경로: " + " => ".join(filePath) + "\n")
+                                    
+                                    #판별
+                                    if searchMode == "1":
+                                        if breakedPoint[1] != fileName:
+                                            continue
+                                        else:
+                                            searchMode = 0
+
                                     downloadFile(fileURL, fileName, filePath)
-                            if(j==fileList[-1]):
+
+                                    file_dir = "/" + "/".join(map(lambda x: cleanText(x), filePath))
+                                    fileInfo = [file_dir, filePath[2], createdOn]
+                                    crawlerInfo.project_file_db_insert(fileInfo)
+                            if (paramNum == len(fileList)):
                                 del filePath[-1]
                         del filePath[-1]
-
 
         except(KeyError):
             pass
@@ -152,38 +201,76 @@ def proejectScrapping(URL):
         for j in infoList:
             try:
                 if j[0] == "L":
-                    print("=====\n라이선스: ", j[9:])
+                    LicenseName = j[9:]
+                    print("=====\n라이선스: ", LicenseName)
+                    # 프로젝트 정보: 라이선스 입력
+                    Info_dic["License"] = LicenseName
 
                 elif j[0] == "P":
-                    print("프로그래밍 언어 ", j[22:] + "\n-----------------------------------------------")
+                    PLang = j[22:]
+                    print("프로그래밍 언어 ", PLang + "\n-----------------------------------------------")
+                    # 프로젝트 정보: 프로그래밍 언어 입력
+                    Info_dic["programmingLanguage"] = PLang
 
             except IndexError:
                 pass
     projectDownload(URL + "frs")
 
-def one_page_crawling(soup):
-    global filePath
-    count = 0
-    for i in soup.find_all("td", {"valign": "middle"}):
-        if count % 3 ==0:
-            projectLink = baseURL + i.find("a").attrs['href']
-            print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n"+projectLink)
 
-            #프로젝트 폴더 생성을 위한 추가.
+def one_page_crawling(soup):
+    global filePath, Info_dic, breakedPoint, searchMode
+    count = 0
+
+    for i in soup.find_all("td", {"valign": "middle"}):
+        init_Infodict()
+        if count % 3 == 0:
+            homepageUrl = baseURL + i.find("a").attrs['href']
+
+            print("▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\n" + homepageUrl)
+
+            # 프로젝트 폴더 생성을 위한 추가.
             projectName = i.text.strip()
             filePath.append(projectName)
             print("프로젝트명: ", projectName)
         elif count % 3 == 1:
+            developer = i.text
             print("업로더: ", i.text)
         elif count % 3 == 2:
+            summary = i.text
             print("설명: ", i.text, "\n")
-            proejectScrapping(projectLink)
+            # 프로젝트 정보: 프로젝트URL/개발자/프로젝트 이름/설명 입력
+            Info_dic["homepageUrl"] = homepageUrl
+            Info_dic["developer"] = developer
+            Info_dic["projectName"] = projectName
+            Info_dic["summary"] = summary
+
+            if searchMode == 1:
+                if breakedPoint[0] != projectName:
+                    filePath = []
+                    continue
+
+            proejectScrapping(homepageUrl)
+
             filePath = []
-            print("경로 초기화!")
 
         count = count + 1
 
+
 def joomla_crawling_start():
+    global breakedPoint, searchMode
+    # 중간에 끊겼는지 검사
+    print("중간 파일 검사\n")
+    breakedPoint = breakcheck(BaseFolderDirectory, "Joomla_Crawling")
+    if breakedPoint != False:
+        searchMode = 1
+        print("끊김 파일 있음. 지점: {}\n".format(breakedPoint))
+    else:
+        print("끊김 파일 없음.\n")
+
+    DataBase_Crawler_DB(
+        crawlerName="Joomlacrawler",
+        crawlerStatus='1').crawler_db_insert()
+
     currentPageNum = 1
     while (1):
         # 매번 다음 페이지 파싱.
@@ -201,6 +288,11 @@ def joomla_crawling_start():
         print("다음 페이지로.\n")
         currentPageNum += 1
 
+    DataBase_Crawler_DB(
+        crawlerName="Joomlacrawler",
+        crawlerStatus='0').crawler_db_insert()
+
+
 if __name__ == "__main__":
     try:
         os.mkdir(BaseFolderDirectory)
@@ -208,3 +300,4 @@ if __name__ == "__main__":
         pass
     joomla_crawling_start()
     flatten(BaseFolderDirectory)
+    print("Joomlacrawling 작업 완료")

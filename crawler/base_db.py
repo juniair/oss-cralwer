@@ -5,8 +5,8 @@ import psycopg2.extras
 from common import getenv
 
 class BaseDB(object):
-    DATABASE_INFO = "host='127.0.0.1' user='postgres' port='{}'"
-    def __init__(self, port=5432, password=None, database_info=None):
+    DATABASE_INFO = "host='localhost' user='postgres' port='15432'"
+    def __init__(self, port=15432, password=12345678, database_info=None):
         self.conn = None
         self.cursor = None
         if database_info is None:
