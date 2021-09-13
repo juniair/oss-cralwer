@@ -1,0 +1,8 @@
+# 배치용 도커 파일
+FROM ubuntu:latest
+ADD requirements.txt /app/requirements.txt
+ADD ./batch/ /app/
+ADD ./codebase/ /sdc1/alice_crawler/codebase
+WORKDIR /app/
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+# ENTRYPOINT celery -A crawler worker --concurrency=2 --loglevel=debug
