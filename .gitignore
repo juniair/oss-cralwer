@@ -9,3 +9,4 @@ venv/**
 # clare batch 시스템
 codebase/
 *.csv
+*.jar
