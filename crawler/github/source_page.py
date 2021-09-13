@@ -57,7 +57,7 @@ def git_clone(crawlingInfo, clone_url, git_id, pid, current_path, current_status
         return False
 
     # 서버상 물리적 위치 
-    file_dir = "/HDD2"+download_path
+    file_dir = download_path
 
     # (git_hash, revision_name)형태 배열 재구성
     revision_list = list(zip(remote_repo_revision[0::2], remote_repo_revision[1::2]))
