@@ -10,3 +10,4 @@ venv/**
 codebase/
 *.csv
 *.jar
+.vscode/**
