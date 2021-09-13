@@ -3,7 +3,7 @@ services:
   rabbit:
     container_name: mq-container
     hostname: rabbit
-    image: rabbitmq:latest
+    image: rabbitmq:3-management
     environment: 
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=12345678
@@ -13,22 +13,6 @@ services:
     volumes:
       - ./mq/data:/var/lib/rabbitmq/mnesia/
   
-  postgres:
-    container_name: postgres
-    hostname: postgres
-    image: postgres:11
-    environment:
-      - POSTGRES_PASSWORD=12345678
-    ports:
-      - '15432:5432'
-    volumes:
-      - ./postgres/data:/var/lib/postgresql/data
-    healthcheck:
-      test: "pg_isready -h localhost -p 5432 -q -U postgres"
-      interval: 3s
-      timeout: 1s
-      retries: 10
-  
   torproxy:
     container_name: torproxy
     hostname: torproxy
@@ -37,34 +21,27 @@ services:
       - '8118:8118'
       - '9050:9050'
 
-  worker-project:
-    container_name: worker-project-container
+  crawler:
+    container_name: crawler-container
     build: 
       context: .
       dockerfile: Dockerfile
     image: &app app
+    stdin_open: true
+    tty: true  
     volumes: 
       - ./crawler:/app
-      - ./data:/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-  
-  worker-source:
-    image: *app
-    container_name: worker-source-container
-    volumes: 
-      - ./crawler:/app
-      - ./data:/data
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - ./data:/sdc1/alice_crawler/data
+    network_mode: "host"
 
   flower:
+    container_name: flower-container
     image: zoomeranalytics/flower:0.9.1-4.0.2
     restart: "no"
-    env_file: *envfile
     ports:
       - "5555:5555"
     depends_on:
-      - rabbit
+      - rabbit 
+    environment:
+      - CELERY_BROKER_URL=amqp://admin:12345678@rabbit
+      - FLOWER_PORT=5555
