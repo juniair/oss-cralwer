@@ -27,6 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: &app app
+    init: true
     stdin_open: true
     tty: true
     volumes:
