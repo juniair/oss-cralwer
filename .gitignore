@@ -11,3 +11,4 @@ codebase/
 *.csv
 *.jar
 .vscode/**
+*.pid
