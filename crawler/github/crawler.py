@@ -41,7 +41,7 @@ class GithubCrawler(Crawler):
     def __init__(self):
         super(GithubCrawler, self).__init__(name="github")
         self.headers = {
-            'Authorization': "token 1d85c431af3ddeaed5e36c9b1e2dd2956943c661"}
+            'Authorization': "token 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"}
         self.maximum_delta = 730
         self.delta = 1
         self.page = 1
