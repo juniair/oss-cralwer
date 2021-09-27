@@ -167,6 +167,8 @@ class GithubCrawler(Crawler):
 
                 start_date += relativedelta(months=1)
 
+                time.sleep(60) # wait reset api call count for 1 minute. 
+                
             os.chdir(initialPath)
             # 다음 키워드 검색을 위하여 초기화
             self.sum_delta = 1
