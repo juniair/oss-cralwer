@@ -14,13 +14,7 @@ echo stopping $CELERY_APP
 
 
 
-PID=`ps -eaf | grep main_${target}.py | grep -v grep` 
-if [[ "" != "$PID" ]]; then 
-    echo background stop main_${target}.py
-    kill -TERM $PID 
-else
-    echo main_${target}.py is not background running.
-fi
+
 
 # echo ""
 
@@ -33,6 +27,14 @@ echo stop ${target2}_project_queue
 
 celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue --hostname=${target}.project@%h
 
+
+PID=`ps -eaf | grep main_${target}.py | grep -v grep` 
+if [[ "" != "$PID" ]]; then 
+    echo background stop main_${target}.py
+    kill -TERM $PID 
+else
+    echo main_${target}.py is not background running.
+fi
 
 echo $CELERY_APP stoped.
 
