@@ -11,3 +11,4 @@ sshtunnel
 fake-useragent
 py7zr
 python-dotenv
+python-dateutil
