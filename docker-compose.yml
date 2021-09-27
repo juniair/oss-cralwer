@@ -1,51 +1,51 @@
-version: '3'
-services: 
+version: "3"
+services:
   rabbit:
     container_name: mq-container
     hostname: rabbit
     image: rabbitmq:3-management
-    environment: 
+    environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=12345678
-    ports: 
+    ports:
       - "5672:5672"
       - "15672:15672"
     volumes:
       - ./mq/data:/var/lib/rabbitmq/mnesia/
-  
+
   torproxy:
     container_name: torproxy
     hostname: torproxy
     image: dperson/torproxy
-    ports: 
-      - '8118:8118'
-      - '9050:9050'
+    ports:
+      - "8118:8118"
+      - "9050:9050"
 
   crawler:
     container_name: crawler-container
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     image: &app app
     stdin_open: true
-    tty: true  
-    volumes: 
+    tty: true
+    volumes:
       - ./crawler:/app
-      - ./data:/sdc1/alice_project/alice_crawler/data
+      - ./data:/HDD2/alice_project/alice_crawler/data
     network_mode: "host"
 
-  claer-batch:
-    container_name: claer-batch-container
-    build: 
-      context: .
-      dockerfile: Dockerfile-batch
-    image: &claer-batch claer-batch
-    stdin_open: true
-    tty: true  
-    volumes: 
-      - ./batch:/app
-      - ./codebase:/sdc1/alice_project/alice_crawler/codebase
-    network_mode: "host"
+  # claer-batch:
+  #   container_name: claer-batch-container
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile-batch
+  #   image: &claer-batch claer-batch
+  #   stdin_open: true
+  #   tty: true
+  #   volumes:
+  #     - ./batch:/app
+  #     - ./codebase:/sdc1/alice_project/alice_crawler/codebase
+  #   network_mode: "host"
 
   flower:
     container_name: flower-container
@@ -54,7 +54,7 @@ services:
     ports:
       - "5555:5555"
     depends_on:
-      - rabbit 
+      - rabbit
     environment:
       - CELERY_BROKER_URL=amqp://admin:12345678@rabbit
       - FLOWER_PORT=5555
