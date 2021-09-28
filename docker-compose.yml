@@ -35,11 +35,11 @@ services:
     network_mode: "host"
 
   claer-batch:
-    container_name: claer-batch-container
+    container_name: clare-batch-container
     build:
       context: .
       dockerfile: Dockerfile1
-    image: &claer-batch claer-batch
+    image: &claer-batch clare-batch
     stdin_open: true
     tty: true
     volumes:
