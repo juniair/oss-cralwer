@@ -34,18 +34,18 @@ services:
       - ./data:/HDD2/alice_project/alice_crawler/data
     network_mode: "host"
 
-  # claer-batch:
-  #   container_name: claer-batch-container
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile-batch
-  #   image: &claer-batch claer-batch
-  #   stdin_open: true
-  #   tty: true
-  #   volumes:
-  #     - ./batch:/app
-  #     - ./codebase:/sdc1/alice_project/alice_crawler/codebase
-  #   network_mode: "host"
+  claer-batch:
+    container_name: claer-batch-container
+    build:
+      context: .
+      dockerfile: Dockerfile-batch
+    image: &claer-batch claer-batch
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./batch:/app
+      - ./codebase:/sdc1/alice_project/alice_crawler/codebase
+    network_mode: "host"
 
   flower:
     container_name: flower-container
