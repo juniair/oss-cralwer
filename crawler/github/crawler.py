@@ -141,9 +141,8 @@ class GithubCrawler(Crawler):
             if response.status_code == 200:
                 text = response.text
                 data = json.loads(text)
-                # check next page exist. if not, break.
-            if "next" in response.links.keys():
-                self.page += 1
+
+            self.page += 1
         except Exception as e:
             log.error(str(e))
         # log.debug(data)
