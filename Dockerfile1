@@ -57,7 +57,7 @@ RUN cd /usr/local/bin && \
 
 
 # install python mobulde
-RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 
 CMD ["/bin/bash"]
