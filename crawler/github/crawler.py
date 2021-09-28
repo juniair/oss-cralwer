@@ -142,7 +142,6 @@ class GithubCrawler(Crawler):
                 text = response.text
                 data = json.loads(text)
 
-            self.page += 1
         except Exception as e:
             log.error(str(e))
         # log.debug(data)
@@ -199,6 +198,8 @@ class GithubCrawler(Crawler):
                     if dictionary is None:
                         log.warning("[crawler_github] Error or No Result")
                         break
+                    else:
+                        self.page += 1
 
                     #  Project information print
                     for item in dictionary["items"]:
