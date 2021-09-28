@@ -5,7 +5,7 @@ import traceback
 
 if __name__ == "__main__":
 
-    release_id_range = (None, None)
+    release_id_range = [None, None]
     try:
         if 3 <= len(sys.argv):
             start_release_id = int(sys.argv[1])
