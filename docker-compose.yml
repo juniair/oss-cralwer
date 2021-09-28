@@ -38,7 +38,7 @@ services:
     container_name: claer-batch-container
     build:
       context: .
-      dockerfile: Dockerfile-batch
+      dockerfile: Dockerfile1
     image: &claer-batch claer-batch
     stdin_open: true
     tty: true
