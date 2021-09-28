@@ -28,7 +28,7 @@ echo stop ${target2}_project_queue
 celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue --hostname=${target}.project@%h
 
 
-PID=`ps -eaf | grep main_${target}.py | grep -v grep` 
+PID=`ps -eaf | grep main_${target}.py | grep -v grep | awk '{print $2}'` 
 if [[ "" != "$PID" ]]; then 
     echo background stop main_${target}.py
     kill -TERM $PID 
