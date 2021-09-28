@@ -39,7 +39,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile1
-    image: &claer-batch clare-batch
+    image: &clare-batch clare-batch
     stdin_open: true
     tty: true
     volumes:
