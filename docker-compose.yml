@@ -34,7 +34,7 @@ services:
       - ./data:/HDD2/alice_project/alice_crawler/data
     network_mode: "host"
 
-  claer-batch:
+  clare-batch:
     container_name: clare-batch-container
     build:
       context: .
