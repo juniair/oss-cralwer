@@ -195,7 +195,7 @@ class GithubCrawler(Crawler):
                     dictionary = self.search_project_page(
                         gitkeyword, self.page, start_date, end_date
                     )
-                    if dictionary is None:
+                    if (dictionary is None) or (not dictionary["items"]):
                         log.warning("[crawler_github] Error or No Result")
                         break
                     else:
