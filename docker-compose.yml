@@ -44,7 +44,8 @@ services:
     tty: true
     volumes:
       - ./batch:/app
-      - ./codebase:/sdc1/alice_project/alice_crawler/codebase
+      - ./data:/HDD2/alice_project/alice_crawler/data
+      - ./codebase:/HDD2/alice_project/alice_crawler/codebase
     network_mode: "host"
 
   flower:

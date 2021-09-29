@@ -7,18 +7,73 @@ import os
 import sys
 import traceback
 import subprocess
-import logging, logging.config, logging.handlers
-
 from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
-
 from common import getenv
-
 from base_db import CrawlerDB
+from logger import getLogger
 
 load_dotenv()
-log = logging.getLogger(__name__)
+
+
+def write_release_id(file_full_path, release_id=1):
+    print("write release_id({})\n".format(release_id))
+    with open(file_full_path, "a") as f:
+        f.write("%s\n" % release_id)
+
+
+def read_last_release_id(file_full_path):
+    last_line = None
+    with open(file_full_path, "r") as f:
+        for line in f.readlines():
+            last_line = line
+    return last_line
+
+
+def try_make_dir(dirPath=None):
+    try:
+        if not os.path.isdir(dirPath):
+            log.warning(
+                "[try_make_dir] '{0}' is not exist. create '{0}'.".format(dirPath)
+            )
+            os.makedirs(dirPath)
+        return True
+    except Exception as e:
+        log.error(str(e))
+        return False
+
+
+# - description : 파일 생성 시도 함수
+# - parameters
+#   * filePath : 파일 경로
+#   * fileName : 파일명(기본값 : check_list.txt)
+# - return
+#   * True : 이미 파일이 존재하거나, 파일 생성에 성공
+#   * False :  생성 도중 문제가 발생
+def try_make_file(filePath=".", fileName="check_list.txt"):
+    try:
+        file_full_path = filePath + os.sep + fileName
+        log.debug("[try_make_file] - {0} checking.".format(file_full_path))
+        if not os.path.isfile(file_full_path):
+            log.warning(
+                "[try_make_file] '{0}' is not exist. create '{0}'.".format(
+                    file_full_path
+                )
+            )
+            write_release_id(file_full_path)
+        return True
+    except Exception as e:
+        log.error("[try_make_file] - {0}".format(e))
+        if not os.path.isfile(file_full_path):
+            os.remove(file_full_path)
+        return False
+
+
+BATCH_LOG_PATH = getenv(
+    "BATCH_LOG_PATH", "/HDD2/alice_project/alice_crawler/batch/log/batch"
+)
+log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
 
 
 class Clare:
@@ -28,97 +83,39 @@ class Clare:
         self.CSV_DOWNLOAD_PATH = getenv(
             "DOWNLOAD_PATH", "/HDD2/alice_project/alice_crawler/batch/csv", self.debug
         )
-        self.try_make_dir(self.CSV_DOWNLOAD_PATH)
+
+        log.warning(
+            "[init] csv diretory checking. path : {0}".format(self.CSV_DOWNLOAD_PATH)
+        )
+        try_make_dir(self.CSV_DOWNLOAD_PATH)
 
         self.HISTORY_PATH = getenv(
             "HISTORY_PATH",
             "/HDD2/alice_project/alice_crawler/batch/history",
             self.debug,
         )
-        self.try_make_dir(self.HISTORY_PATH)
+
+        log.warning(
+            "[init] history diretory checking. path : {0}".format(self.HISTORY_PATH)
+        )
+        try_make_dir(self.HISTORY_PATH)
 
         self.HISTORY_FILE_NAME = getenv(
             "HISTORY_FILE_NAME", "check_list.txt", self.debug
         )
-        self.try_make_file(self.HISTORY_PATH, self.HISTORY_FILE_NAME)
 
-        # 로그 파일 경로 설정
-
-        self.BATCH_LOG_PATH = getenv(
-            "BATCH_LOG_PATH",
-            "/HDD2/alice_project/alice_crawler/batch/log/batch",
-            self.debug,
+        log.warning(
+            "[init] history file checking. path : {0}".format(
+                self.HISTORY_PATH + os.sep + self.HISTORY_FILE_NAME
+            )
         )
-        # Batch 로그 저장소 생성
-        self.try_make_dir(self.BATCH_LOG_PATH)
+        try_make_file(filePath=self.HISTORY_PATH, fileName=self.HISTORY_FILE_NAME)
 
     """
     release_id를 특정 파일에 작성
     """
 
-    def write_release_id(self, file_full_path, release_id=1):
-        print("write release_id({})\n".format(release_id))
-        with open(file_full_path, "a") as f:
-            f.write("%s\n" % release_id)
-
-    """
-    마지막으로 사용한 release_id를 특정 파일에 호출
-    """
-
-    def read_last_release_id(self, file_full_path):
-        last_line = None
-        with open(file_full_path, "r") as f:
-            for line in f.readlines():
-                last_line = line
-
-        return last_line
-
-    def try_make_dir(self, dirPath=None):
-        try:
-            if not os.path.isdir(dirPath):
-                log.info(
-                    "[try_make_dir] '{0}' is not exist. create '{0}'.".format(dirPath)
-                )
-                os.makedirs(dirPath)
-            return True
-        except Exception as e:
-            print(e)
-            return False
-
-    # - description : 파일 생성 시도 함수
-    # - parameters
-    #   * filePath : 파일 경로
-    #   * fileName : 파일명(기본값 : check_list.txt)
-    # - return
-    #   * True : 이미 파일이 존재하거나, 파일 생성에 성공
-    #   * False :  생성 도중 문제가 발생
-
-    def try_make_file(self, filePath=None, fileName="check_list.txt"):
-        try:
-
-            file_full_path = filePath + os.sep + fileName
-            log.debug("[try_make_file] - {0} checking.".format(file_full_path))
-            if not os.path.isfile(file_full_path):
-                log.info(
-                    "[try_make_file] '{0}' is not exist. create '{0}'.".format(
-                        file_full_path
-                    )
-                )
-
-                self.write_release_id(file_full_path)
-
-            return True
-        except Exception as e:
-            log.error("[try_make_file] - {0}".format(e))
-            if not os.path.isfile(file_full_path):
-                os.remove(file_full_path)
-            return False
-
-    """
-    Description : clear add 작업
-    """
-
-    def run(self, release_id_range=(None, None)):
+    def run(self, release_id_range=[None, None]):
 
         # Step 1. CSV 추출을 위한 DB 접근 시도
         try:
@@ -135,7 +132,7 @@ class Clare:
         file_full_path = self.HISTORY_PATH + os.sep + self.HISTORY_FILE_NAME
         if start_release_id is None:
             log.debug("file path : {0}".format(file_full_path))
-            start_release_id = int(self.read_last_release_id(file_full_path))
+            start_release_id = int(read_last_release_id(file_full_path))
             release_id_range[0] = start_release_id
 
         # Step 3. DB에서 마지막 release_id 값 불러옴
@@ -177,7 +174,7 @@ class Clare:
 
         if is_complete:
             # Step 6. Clare add 작업이 끝나면 다음 시작할 release_id 기록
-            self.write_release_id(file_full_path, last_release_id)
+            write_release_id(file_full_path, last_release_id)
 
         crawler_db.close()
         return is_complete
@@ -253,7 +250,7 @@ class Clare:
             is_debug=self.debug,
         )
 
-        self.try_make_dir(log_path)
+        try_make_dir(log_path)
 
         log_file_name = getenv(
             "CLARE_ADD_LOG_NAME", "clare_add.log", is_debug=self.debug
@@ -265,7 +262,7 @@ class Clare:
                 "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
             )
             code_base_path = getenv(
-                "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebse"
+                "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebase"
             )
 
             args = [
@@ -279,6 +276,9 @@ class Clare:
                 "-codebase",
                 code_base_path,
             ]
+            log.info(
+                "[clare command] {0}".format(" ".join([str(elem) for elem in args]))
+            )
             p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
 
         return p
@@ -293,7 +293,7 @@ class Clare:
             is_debug=self.debug,
         )
 
-        self.try_make_dir(log_path)
+        try_make_dir(log_path)
 
         log_file_name = getenv(
             "CLARE_INDEX_LOG_NAME", "clare_index.log", is_debug=self.debug
@@ -316,6 +316,11 @@ class Clare:
                 "-codebase",
                 code_base_path,
             ]
+
+            log.info(
+                "[clare command] {0}".format(" ".join([str(elem) for elem in args]))
+            )
+
             p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
 
         return p
