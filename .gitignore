@@ -12,3 +12,4 @@ codebase/
 *.jar
 .vscode/**
 *.pid
+history/**
