@@ -13,3 +13,4 @@ codebase/
 .vscode/**
 *.pid
 history/**
+batch/history/
