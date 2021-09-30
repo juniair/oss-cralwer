@@ -180,10 +180,14 @@ class Clare:
                     export_utc_now=export_utc_now.timestamp(),
                 )
 
-                self.clare_add_processing(csv_file_path)
+                csv_file_size = os.stat(csv_file_path).st_size
+
+                if 0 < csv_file_size:
+                    self.clare_add_processing(csv_file_path)
 
                 # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id + 1
+                time.sleep(60)
         except Exception as e:
             log.error(e)
             traceback.print_exc()
