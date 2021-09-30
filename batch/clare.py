@@ -112,10 +112,6 @@ class Clare:
         )
         try_make_file(filePath=self.HISTORY_PATH, fileName=self.HISTORY_FILE_NAME)
 
-    """
-    release_id를 특정 파일에 작성
-    """
-
     def run(self, release_id_range=[None, None]):
 
         # Step 1. CSV 추출을 위한 DB 접근 시도
@@ -164,11 +160,42 @@ class Clare:
 
         print("indexing release_id {0} ~ {1}".format(start_release_id, last_release_id))
 
-        is_complete = self.add(
-            crawler_db=crawler_db,
-            start_release_id=start_release_id,
-            last_release_id=last_release_id,
-        )
+        export_utc_now = datetime.utcnow()
+        time_gap = timedelta(hours=9)
+        export_utc_now = export_utc_now + time_gap
+
+        try:
+            while start_release_id < last_release_id:
+                # 시작할 release_id에서 100,000개 데이터 추출 데이터가
+                # last_release_id보다 큰 경우 처리하지 말 것
+                if (start_release_id + 100000) < last_release_id:
+                    end_release_id = start_release_id + 100000
+                else:
+                    end_release_id = last_release_id
+
+                csv_file_path = self.export_csv_file(
+                    crawler_db,
+                    start_release_id,
+                    end_release_id,
+                    export_utc_now=export_utc_now.timestamp(),
+                )
+
+                self.clare_add_processing(csv_file_path)
+
+                # 다음 release_id를 시작점으로 변경
+                start_release_id = end_release_id + 1
+        except Exception as e:
+            log.error(e)
+            traceback.print_exc()
+            is_complete = False
+
+            # 예외 발생시 다음 시작 순서를 체크 하기 위
+            last_release_id = start_release_id
+            log.info(
+                "[clare - run] running stop. restart release_id({0}) changed. ".format(
+                    start_release_id
+                )
+            )
 
         if is_complete:
             is_complete = self.index()
@@ -178,56 +205,6 @@ class Clare:
             write_release_id(file_full_path, last_release_id)
 
         crawler_db.close()
-        return is_complete
-
-    def add(self, crawler_db, start_release_id, last_release_id):
-
-        is_complete = False
-
-        try:
-
-            end_release_id = start_release_id
-            export_utc_now = datetime.utcnow()
-            time_gap = timedelta(hours=9)
-            export_utc_now = export_utc_now + time_gap
-
-            # Step 4. CSV 파일 추출 (100,000개씩 분할 하여 추출)
-            # 시작 release_id부터 현재 마지막 last_release_id보다
-            while start_release_id < last_release_id:
-
-                # 시작할 release_id에서 100,000개 데이터 추출 데이터가
-                # last_release_id보다 큰 경우 처리하지 말 것
-                if (start_release_id + 100000) < last_release_id:
-                    end_release_id = start_release_id + 100000
-                else:
-                    end_release_id = last_release_id
-
-                # csv 절대 경로 생성
-                csv_file_path = self.make_export_csv_file_name(
-                    start_release_id, end_release_id, export_utc_now.timestamp()
-                )
-                query = self.make_export_csv_file_query(
-                    start_release_id, end_release_id
-                )
-
-                print(query)
-                log.info(query)
-                with open(csv_file_path, "w") as csv:
-                    log.info("[clare.add] data export - {0}".format(csv_file_path))
-                    crawler_db.copy_expert(sql=query, file=csv)
-
-                # 다음 release_id를 시작점으로 변경
-                start_release_id = end_release_id + 1
-
-                # Step 5. clare add 명령 실행
-                self.clare_add_processing(csv_file_path)
-
-            is_complete = True
-        except Exception as e:
-            log.error(e)
-            traceback.print_exc()
-            is_complete = False
-
         return is_complete
 
     def index(self):
@@ -326,19 +303,14 @@ class Clare:
 
         return p
 
-    def make_export_csv_file_name(
-        self, start_release_id, end_release_id, export_date_time
+    def export_csv_file(
+        self, crawler_db, start_release_id, end_release_id, export_timestamp
     ):
-
-        csv_file_name = "dpa_release_tb_data_{0}_to_{1}_{2}(UTC+9).csv".format(
-            start_release_id, end_release_id, export_date_time
+        csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
+            start_release_id, end_release_id, export_timestamp
         )
 
         csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
-
-        return csv_file_path
-
-    def make_export_csv_file_query(self, start_release_id, end_release_id):
 
         query = """
         COPY (  SELECT release_id
@@ -354,7 +326,21 @@ class Clare:
         """
 
         value = start_release_id, end_release_id
-        return query % value
+
+        query = query % value
+
+        log.info(
+            """
+        [export csv file query] - 
+        %s
+        """
+            % query
+        )
+        with open(csv_file_path, "w") as csv:
+            log.info("[clare.add] data export - {0}".format(csv_file_path))
+            crawler_db.copy_expert(sql=query, file=csv)
+
+        return csv_file_path
 
 
 if __name__ == "__main__":
