@@ -158,7 +158,9 @@ class Clare:
             log.debug("restart csv")
             start_release_id = 1
 
-        print("indexing release_id {0} ~ {1}".format(start_release_id, last_release_id))
+        log.info(
+            "indexing release_id {0} ~ {1}".format(start_release_id, last_release_id)
+        )
 
         export_utc_now = datetime.utcnow()
         time_gap = timedelta(hours=9)
@@ -174,10 +176,10 @@ class Clare:
                     end_release_id = last_release_id
 
                 csv_file_path = self.export_csv_file(
-                    crawler_db,
-                    start_release_id,
-                    end_release_id,
-                    export_utc_now=export_utc_now.timestamp(),
+                    crawler_db=crawler_db,
+                    start_release_id=start_release_id,
+                    end_release_id=end_release_id,
+                    export_timestamp=export_utc_now.timestamp(),
                 )
 
                 csv_file_size = os.stat(csv_file_path).st_size
@@ -310,11 +312,6 @@ class Clare:
     def export_csv_file(
         self, crawler_db, start_release_id, end_release_id, export_timestamp
     ):
-        csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
-            start_release_id, end_release_id, export_timestamp
-        )
-
-        csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
 
         query = """
         COPY (  SELECT release_id
@@ -340,6 +337,13 @@ class Clare:
         """
             % query
         )
+
+        csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
+            start_release_id, end_release_id, export_timestamp
+        )
+
+        csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
+
         with open(csv_file_path, "w") as csv:
             log.info("[clare.add] data export - {0}".format(csv_file_path))
             crawler_db.copy_expert(sql=query, file=csv)
