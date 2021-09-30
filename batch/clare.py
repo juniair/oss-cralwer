@@ -315,11 +315,12 @@ class Clare:
 
         query = """
         COPY (  SELECT release_id
-                    ,file_dir
-                FROM dpa_crawler_release_tb
-                WHERE %s <= release_id
-                AND release_id < %s
-            ORDER BY release_id ASC)
+                      ,file_dir
+                  FROM dpa_crawler_release_tb
+                 WHERE %s <= release_id
+                   AND release_id < %s
+                   AND file_dir IS NOT NULL
+              ORDER BY release_id ASC)
           TO STDOUT
         WITH CSV
              DELIMITER ','
