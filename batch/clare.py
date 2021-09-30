@@ -73,6 +73,7 @@ def try_make_file(filePath=".", fileName="check_list.txt"):
 BATCH_LOG_PATH = getenv(
     "BATCH_LOG_PATH", "/HDD2/alice_project/alice_crawler/batch/log/batch"
 )
+
 log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
 
 
