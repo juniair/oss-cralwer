@@ -320,6 +320,9 @@ class Clare:
         log.info(
             "[export_csv_file] - {0} ~ {1}".format(start_release_id, end_release_id)
         )
+
+        value = start_release_id, end_release_id
+
         query = """
             SELECT COUNT(release_id) as c
               FROM dpa_crawler_release_tb
@@ -327,6 +330,8 @@ class Clare:
                    AND release_id < %s
                    AND file_dir IS NOT NULL
             """
+        query = query % value
+
         log.warning("Check if extraction is possible")
         log.debug(query)
         crawler_db.execute(query)
@@ -351,8 +356,6 @@ class Clare:
                 DELIMITER ','
                 FORCE QUOTE *
             """
-
-            value = start_release_id, end_release_id
 
             query = query % value
 
