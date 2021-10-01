@@ -142,6 +142,7 @@ class Clare:
             SELECT MAX(release_id) as p
               FROM dpa_crawler_release_tb
              WHERE %s < release_id
+               AND file_dir IS NOT NULL
             """
             query = query % start_release_id
             log.debug(query)
@@ -166,6 +167,8 @@ class Clare:
         time_gap = timedelta(hours=9)
         export_utc_now = export_utc_now + time_gap
 
+        is_added = False
+
         try:
             while start_release_id < last_release_id:
                 # 시작할 release_id에서 100,000개 데이터 추출 데이터가
@@ -182,10 +185,12 @@ class Clare:
                     export_timestamp=export_utc_now.timestamp(),
                 )
 
-                csv_file_size = os.stat(csv_file_path).st_size
+                if csv_file_path is not None:
+                    # csv_file_size = os.stat(csv_file_path).st_size
+                    # if 0 < csv_file_size:
 
-                if 0 < csv_file_size:
                     self.clare_add_processing(csv_file_path)
+                    is_added = True
 
                 # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id + 1
@@ -203,7 +208,7 @@ class Clare:
                 )
             )
 
-        if is_complete:
+        if is_complete or is_added:
             is_complete = self.index()
 
         if is_complete:
@@ -312,42 +317,64 @@ class Clare:
     def export_csv_file(
         self, crawler_db, start_release_id, end_release_id, export_timestamp
     ):
-
+        log.info(
+            "[export_csv_file] - {0} ~ {1}".format(start_release_id, end_release_id)
+        )
         query = """
-        COPY (  SELECT release_id
-                      ,file_dir
-                  FROM dpa_crawler_release_tb
-                 WHERE %s <= release_id
+            SELECT COUNT(release_id) as c
+              FROM dpa_crawler_release_tb
+             WHERE %s <= release_id
                    AND release_id < %s
                    AND file_dir IS NOT NULL
-              ORDER BY release_id ASC)
-          TO STDOUT
-        WITH CSV
-             DELIMITER ','
-             FORCE QUOTE *
-        """
-
-        value = start_release_id, end_release_id
-
-        query = query % value
-
-        log.info(
             """
-        [export csv file query] - 
-        %s
-        """
-            % query
-        )
+        log.warning("Check if extraction is possible")
+        log.debug(query)
+        crawler_db.execute(query)
+        result = crawler_db.fetchall()
+        row_count = result[0].c
 
-        csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
-            start_release_id, end_release_id, export_timestamp
-        )
+        csv_file_path = None
+        if 0 < row_count:
 
-        csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
+            log.info("csv can be extracted.")
 
-        with open(csv_file_path, "w") as csv:
-            log.info("[clare.add] data export - {0}".format(csv_file_path))
-            crawler_db.copy_expert(sql=query, file=csv)
+            query = """
+            COPY (  SELECT release_id
+                        ,file_dir
+                    FROM dpa_crawler_release_tb
+                    WHERE %s <= release_id
+                    AND release_id < %s
+                    AND file_dir IS NOT NULL
+                ORDER BY release_id ASC)
+            TO STDOUT
+            WITH CSV
+                DELIMITER ','
+                FORCE QUOTE *
+            """
+
+            value = start_release_id, end_release_id
+
+            query = query % value
+
+            log.info(
+                """
+            [export csv file query] - 
+            %s
+            """
+                % query
+            )
+
+            csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
+                start_release_id, end_release_id, export_timestamp
+            )
+
+            csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
+
+            with open(csv_file_path, "w") as csv:
+                log.info("[clare.add] data export - {0}".format(csv_file_path))
+                crawler_db.copy_expert(sql=query, file=csv)
+        else:
+            log.info("Unable to extract csv.")
 
         return csv_file_path
 
