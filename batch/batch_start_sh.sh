@@ -19,4 +19,8 @@ elif [ $# -eq 1 ] ; then
   start_range=$1
 fi
 
-python3 ./main.py ${start_range} ${end_range}
+nowdate=$(date + "%Y-%m-%d %H:%M:%S")
+
+echo ${nowdate} running python3 /app/main.py ${start_range} ${end_range} >> /app/program.log 
+
+python3 /app/main.py ${start_range} ${end_range} > /app/log/batch/main.log 2>&1 &
