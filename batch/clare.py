@@ -193,7 +193,7 @@ class Clare:
                     is_added = True
 
                 # 다음 release_id를 시작점으로 변경
-                start_release_id = end_release_id + 1
+                start_release_id = end_release_id
                 time.sleep(60)
         except Exception as e:
             log.error(e)
@@ -211,6 +211,7 @@ class Clare:
         if is_complete or is_added:
             is_complete = self.index()
 
+        last_release_id = last_release_id + 1
         if is_complete:
             # Step 6. Clare add 작업이 끝나면 다음 시작할 release_id 기록
             write_release_id(file_full_path, last_release_id)
@@ -318,7 +319,7 @@ class Clare:
         self, crawler_db, start_release_id, end_release_id, export_timestamp
     ):
         log.info(
-            "[export_csv_file] - {0} ~ {1}".format(start_release_id, end_release_id)
+            "[export_csv_file] - {0} ~ {1}".format(start_release_id, (end_release_id-1))
         )
 
         value = start_release_id, end_release_id
@@ -369,7 +370,7 @@ class Clare:
             )
 
             csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
-                start_release_id, end_release_id, export_timestamp
+                start_release_id, (end_release_id-1), export_timestamp
             )
 
             csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
