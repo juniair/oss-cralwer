@@ -355,6 +355,7 @@ class Clare:
             WITH CSV
                 DELIMITER ','
                 FORCE QUOTE *
+                ENCODING 'UTF-8'
             """
 
             query = query % value
