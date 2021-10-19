@@ -374,7 +374,7 @@ class Clare:
 
             csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
 
-            with open(csv_file_path, "w") as csv:
+            with open(csv_file_path, "w", encoding="utf-8") as csv:
                 log.info("[clare.export_csv_file] data export - {0} excute.".format(csv_file_path))
                 crawler_db.copy_expert(sql=query, file=csv)
                 log.info("[clare.export_csv_file] data export - {0} excuted.".format(csv_file_path))
