@@ -324,7 +324,7 @@ class Clare:
         value = start_release_id, end_release_id
 
         query = """
-            SELECT COUNT(release_id) as c
+            SELECT COUNT(release_id) AS c
               FROM dpa_crawler_release_tb
              WHERE %s <= release_id
                    AND release_id < %s
@@ -374,8 +374,9 @@ class Clare:
             csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
 
             with open(csv_file_path, "w") as csv:
-                log.info("[clare.add] data export - {0}".format(csv_file_path))
+                log.info("[clare.export_csv_file] data export - {0} excute.".format(csv_file_path))
                 crawler_db.copy_expert(sql=query, file=csv)
+                log.info("[clare.export_csv_file] data export - {0} excuted.".format(csv_file_path))
         else:
             log.info("Unable to extract csv.")
 
