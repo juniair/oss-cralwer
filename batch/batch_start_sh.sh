@@ -19,7 +19,7 @@ elif [ $# -eq 1 ] ; then
   start_range=$1
 fi
 
-nowdate=$(date + "%Y-%m-%d %H:%M:%S")
+nowdate=$(date "+%Y-%m-%d %H:%M:%S")
 
 echo ${nowdate} running python3 /app/main.py ${start_range} ${end_range} >> /app/program.log 
 
