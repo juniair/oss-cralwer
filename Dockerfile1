@@ -75,6 +75,7 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 RUN apt-get install -y htop
 
 # crontab
+RUN apt-get install -y systemd
 RUN apt-get install -y cron
 RUN service cron start
 RUN systemctl enable cron.service
