@@ -35,7 +35,8 @@ def try_make_dir(dirPath=None):
     try:
         if not os.path.isdir(dirPath):
             log.warning(
-                "[try_make_dir] '{0}' is not exist. create '{0}'.".format(dirPath)
+                "[try_make_dir] '{0}' is not exist. create '{0}'.".format(
+                    dirPath)
             )
             os.makedirs(dirPath)
         return True
@@ -86,7 +87,8 @@ class Clare:
         )
 
         log.warning(
-            "[init] csv diretory checking. path : {0}".format(self.CSV_DOWNLOAD_PATH)
+            "[init] csv diretory checking. path : {0}".format(
+                self.CSV_DOWNLOAD_PATH)
         )
         try_make_dir(self.CSV_DOWNLOAD_PATH)
 
@@ -97,7 +99,8 @@ class Clare:
         )
 
         log.warning(
-            "[init] history diretory checking. path : {0}".format(self.HISTORY_PATH)
+            "[init] history diretory checking. path : {0}".format(
+                self.HISTORY_PATH)
         )
         try_make_dir(self.HISTORY_PATH)
 
@@ -110,7 +113,8 @@ class Clare:
                 self.HISTORY_PATH + os.sep + self.HISTORY_FILE_NAME
             )
         )
-        try_make_file(filePath=self.HISTORY_PATH, fileName=self.HISTORY_FILE_NAME)
+        try_make_file(filePath=self.HISTORY_PATH,
+                      fileName=self.HISTORY_FILE_NAME)
 
     def run(self, release_id_range=[None, None]):
 
@@ -160,7 +164,8 @@ class Clare:
             start_release_id = 1
 
         log.info(
-            "indexing release_id {0} ~ {1}".format(start_release_id, last_release_id)
+            "indexing release_id {0} ~ {1}".format(
+                start_release_id, last_release_id)
         )
 
         export_utc_now = datetime.utcnow()
@@ -168,6 +173,7 @@ class Clare:
         export_utc_now = export_utc_now + time_gap
 
         is_added = False
+        is_complete = False
 
         try:
             while start_release_id < last_release_id:
@@ -195,13 +201,14 @@ class Clare:
                 # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id
                 time.sleep(60)
+                is_complete = True
         except Exception as e:
             log.error(e)
             traceback.print_exc()
             is_complete = False
 
             # 예외 발생시 다음 시작 순서를 체크 하기 위
-            last_release_id = start_release_id
+            last_release_id = start_release_id - 1
             log.info(
                 "[clare - run] running stop. restart release_id({0}) changed. ".format(
                     start_release_id
@@ -267,7 +274,8 @@ class Clare:
                 code_base_path,
             ]
             log.info(
-                "[clare command] {0}".format(" ".join([str(elem) for elem in args]))
+                "[clare command] {0}".format(
+                    " ".join([str(elem) for elem in args]))
             )
             p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
 
@@ -308,7 +316,8 @@ class Clare:
             ]
 
             log.info(
-                "[clare command] {0}".format(" ".join([str(elem) for elem in args]))
+                "[clare command] {0}".format(
+                    " ".join([str(elem) for elem in args]))
             )
 
             p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
@@ -319,7 +328,8 @@ class Clare:
         self, crawler_db, start_release_id, end_release_id, export_timestamp
     ):
         log.info(
-            "[export_csv_file] - {0} ~ {1}".format(start_release_id, (end_release_id-1))
+            "[export_csv_file] - {0} ~ {1}".format(
+                start_release_id, (end_release_id-1))
         )
 
         value = start_release_id, end_release_id
@@ -328,7 +338,7 @@ class Clare:
             SELECT COUNT(release_id) AS c
               FROM dpa_crawler_release_tb
              WHERE %s <= release_id
-                   AND release_id < %s
+                   AND release_id <= %s
                    AND file_dir IS NOT NULL
             """
         query = query % value
@@ -370,15 +380,17 @@ class Clare:
             )
 
             csv_file_name = "dpa_release_tb_data_{0}_to_{1}-{2}(UTC+9).csv".format(
-                start_release_id, (end_release_id-1), export_timestamp
+                start_release_id, (end_release_id), export_timestamp
             )
 
             csv_file_path = self.CSV_DOWNLOAD_PATH + os.sep + csv_file_name
 
             with open(csv_file_path, "w", encoding="utf-8") as csv:
-                log.info("[clare.export_csv_file] data export - {0} excute.".format(csv_file_path))
+                log.info(
+                    "[clare.export_csv_file] data export - {0} excute.".format(csv_file_path))
                 crawler_db.copy_expert(sql=query, file=csv)
-                log.info("[clare.export_csv_file] data export - {0} excuted.".format(csv_file_path))
+                log.info(
+                    "[clare.export_csv_file] data export - {0} excuted.".format(csv_file_path))
         else:
             log.info("Unable to extract csv.")
 
