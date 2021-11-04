@@ -30,7 +30,7 @@ PROGRESS_LOG_FILENAME = data_path + "/progress_github.json"
 
 
 class GithubCrawler(Crawler):
-    MAX_PROJECT = 100
+    MAX_PROJECT = 10
     # Github 조회리스트
     LANGUAGE = [
         "Java",
@@ -124,11 +124,9 @@ class GithubCrawler(Crawler):
         self.keyword = random.choice(self.LANGUAGE)
         self.read_progress_log()
 
-    def search_project_page(self, keyword, page, start_date, end_date):
-        url = "https://api.github.com/search/repositories?q=language:{}+created:{}..{}&order=asc&per_page={}&page={}".format(
+    def search_project_page(self, keyword, page):
+        url = "https://api.github.com/search/repositories?q=language:{}&order=asc&per_page={}&page={}".format(
             urllib.parse.quote(keyword),
-            start_date,
-            end_date,
             self.MAX_PROJECT,
             str(page),
         )
@@ -137,7 +135,8 @@ class GithubCrawler(Crawler):
         try:
             self.headers.update(get_http_headers())
             log.debug(self.headers)
-            response = requests.get(url, headers=self.headers, proxies=get_tor_proxy())
+            response = requests.get(
+                url, headers=self.headers, proxies=get_tor_proxy())
             if response.status_code == 200:
                 text = response.text
                 data = json.loads(text)
@@ -180,47 +179,34 @@ class GithubCrawler(Crawler):
 
             current_path = initialPath
 
-            # github search API는 최대 1,000건만 조회 가능함
-            # github 사이트 오픈일부터 현재까지 월별 검색
-            # 2008년        1년 * 11개월 * 1,000건 =  11,000건
-            # 2009~2020년  12년 * 12개월 * 1,000건 = 144,000건
-            # 2021년        1년 * 10개월 * 1,000건
+
             current_date = current.date()
             start_date = datetime.date(2008, 2, 1)
-            while start_date < current_date:
-                month_rage = calendar.monthrange(start_date.year, start_date.month)
-                end_date = start_date.replace(day=month_rage[1])
-                while True:
-                    self.write_progress_log()
-                    dictionary = self.search_project_page(
-                        gitkeyword, self.page, start_date, end_date
+            while True:
+                self.write_progress_log()
+                dictionary = self.search_project_page(gitkeyword, self.page)
+                if (dictionary is None) or (not dictionary["items"]):
+                    log.warning("[crawler_github] Error or No Result")
+                    break
+                else:
+                    self.page += 1
+
+                #  Project information print
+                for item in dictionary["items"]:
+                    log.warning(
+                        "call get_release_info : {}".format(item["name"]))
+                    project_tasks.get_release_info.delay(
+                        item, current_path, self.get_current_status()
                     )
-                    if (dictionary is None) or (not dictionary["items"]):
-                        log.warning("[crawler_github] Error or No Result")
-                        break
-                    else:
-                        self.page += 1
 
-                    #  Project information print
-                    for item in dictionary["items"]:
-                        log.warning("call get_release_info : {}".format(item["name"]))
-                        project_tasks.get_release_info.delay(
-                            item, current_path, self.get_current_status()
-                        )
-
-                    time.sleep(60 * 60)  # wait for 60 minutes
-                    # break # test
-
-                start_date += relativedelta(months=1)
-                # 다음 키워드 검색을 위하여 초기화
-                self.sum_delta = 1
-                self.page = 1
-                time.sleep(60 * 5)  # wait reset api call count for 5 minutes.
-
+                time.sleep(60 * 60)  # wait for 60 minutes
+                break  # test
             os.chdir(initialPath)
-
+            # 다음 키워드 검색을 위하여 초기화
+            self.sum_delta = 1
+            self.page = 1
             time.sleep(60 * 60 * 2)  # wait for 2 hours
-            # break # test
+            # break  # test
 
         # 완료 후 초기화
         self.maximum_delta = 730
