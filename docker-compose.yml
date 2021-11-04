@@ -25,7 +25,7 @@ services:
     container_name: crawler-container
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Crawler_Dockerfile
     image: &app app
     stdin_open: true
     tty: true
