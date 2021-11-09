@@ -200,7 +200,7 @@ class GithubCrawler(Crawler):
                     )
 
                 time.sleep(60 * 60)  # wait for 60 minutes
-                break  # test
+                # break  # test
             os.chdir(initialPath)
             # 다음 키워드 검색을 위하여 초기화
             self.sum_delta = 1
