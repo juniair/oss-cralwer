@@ -42,6 +42,7 @@ RUN apt-get -y install libffi-dev
 
 
 # install open JDK8 & Settings
+RUN apt-get -y install openjdk-8-jdk --fix-missing
 
 
 # install python.
