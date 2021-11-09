@@ -1,4 +1,5 @@
-celery
+celery==4.4.7
+flower
 lxml
 requests
 psycopg2
@@ -10,3 +11,4 @@ sshtunnel
 fake-useragent
 py7zr
 python-dotenv
+python-dateutil

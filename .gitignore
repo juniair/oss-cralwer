@@ -4,3 +4,13 @@ data/
 
 .idea/
 venv/**
+
+
+# clare batch 시스템
+codebase/
+*.csv
+*.jar
+.vscode/**
+*.pid
+history/**
+batch/history/
