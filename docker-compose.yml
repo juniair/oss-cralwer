@@ -38,7 +38,7 @@ services:
     container_name: clare-batch-container
     build:
       context: .
-      dockerfile: Dockerfile1
+      dockerfile: Batch_Dockerfile
     image: &clare-batch clare-batch
     stdin_open: true
     tty: true
