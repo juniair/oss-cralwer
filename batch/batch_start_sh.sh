@@ -23,4 +23,4 @@ nowdate=$(date "+%Y-%m-%d %H:%M:%S")
 
 echo ${nowdate} running python3 /app/main.py ${start_range} ${end_range} >> /app/program.log 
 
-python3 /app/main.py ${start_range} ${end_range} > /app/log/batch/main.log 2>&1 &
+nohup python3 -u /app/main.py &
