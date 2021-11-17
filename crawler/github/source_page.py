@@ -27,6 +27,21 @@ download_path = data_path + "/githubDir" # sourceforge 프로젝트 다운로드
 
 log = logging.getLogger(__name__) # getLogger(filename="github_crawler.log")
 
+
+def isUsableVersion(version, project_name, default_branch = None):
+    patternString = '^refs\/(tags|heads)\/(v|ver|version|master|main'
+
+    if (default_branch or None):
+        patternString = patternString + "|" + default_branch
+
+    if(project_name or None):
+        patternString = patternString + "|" + project_name
+
+    patternString = patternString + ")"
+
+    partten = re.compile(patternString, re.IGNORECASE)
+    return partten.search(version)
+
 @app.task(autoretry_for=(Exception,))
 def get_source_code(projectInfo, clone_url, git_id,  pid, current_path, progress_status):
     log.debug(projectInfo)
@@ -61,6 +76,10 @@ def git_clone(crawlingInfo, clone_url, git_id, pid, current_path, current_status
 
     # (git_hash, revision_name)형태 배열 재구성
     revision_list = list(zip(remote_repo_revision[0::2], remote_repo_revision[1::2]))
+
+    # master를 포함한 최신 tag 10개만 추출
+    revision_list = [ x for x in revision_list if isUsableVersion(x[1], crawlingInfo.projectName) ][0:10]
+
     for rev in revision_list:
         os.chdir(current_path) # move project directory
 
