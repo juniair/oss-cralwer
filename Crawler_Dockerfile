@@ -16,10 +16,10 @@ ENV LC_ALL ko_KR.UTF-8
 RUN apt-get install -y libpq-dev
 
 
-# RUN apt-get -y install libncursesw5-dev libgdbm-dev libc6-dev
-# RUN apt-get -y install zlib1g-dev libsqlite3-dev tk-dev
-# RUN apt-get -y install libssl-dev openssl
-# RUN apt-get -y install libffi-dev
+RUN apt-get -y install libncursesw5-dev libgdbm-dev libc6-dev
+RUN apt-get -y install zlib1g-dev libsqlite3-dev tk-dev
+RUN apt-get -y install libssl-dev openssl
+RUN apt-get -y install libffi-dev
 
 # RUN apt-get -y update && \ 
 # apt-get install -y git \ 
@@ -42,6 +42,7 @@ RUN apt-get install -y libpq-dev
 
 
 # install open JDK8 & Settings
+RUN apt-get -y install openjdk-8-jdk --fix-missing
 
 
 # install python.
