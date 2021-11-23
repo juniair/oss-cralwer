@@ -46,11 +46,12 @@ class GetRepoInfo:
                 log.debug("ls-remote -t : result="+result.decode('utf-8'))
                 # print("decode utf-8")
                 if result.decode('utf-8') != '':
-                    remote_revisions.extend(re.split('\s', result.decode('utf-8')))
                     # print(remote_revisions)
                     # 개행문자 삭제
-                    remote_revisions.pop()
-
+                    remote_revisions_list = re.split('\s', result.decode('utf-8'))
+                    remote_revisions_list.pop()
+                    remote_revisions.extend(remote_revisions_list)
+                
                 
             except Exception as e:
                 print(e)
