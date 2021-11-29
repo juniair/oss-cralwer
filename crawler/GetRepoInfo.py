@@ -7,21 +7,6 @@ from datetime import datetime
 
 log = logging.getLogger(__name__)
 
-def isUsableVersion(version, default_branch, project_name):
-    patternString = '^refs\/(tags|heads)\/(v|ver|version|master|main'
-
-    if (default_branch or None):
-        patternString = patternString + "|" + default_branch
-
-    if(project_name or None):
-        patternString = patternString + "|" + project_name
-
-    patternString = patternString + ")"
-
-    partten = re.compile(patternString, re.IGNORECASE)
-    return partten.search(version)
-
-
 class GetRepoInfo:
     # git 릴리즈 버전구분하여 다운로드 하기위하여
     # 다운로드 전 ls-remote 명령어로 tags, head 정보 등을 가져온다.
@@ -37,7 +22,8 @@ class GetRepoInfo:
                 if len(master_branch) > 0:
                     for item in master_branch:
                         remote_revisions.append(item)
-
+                log.debug("Master revisions")
+                log.debug(remote_revisions)
                 # git ls-remote 수행
                 log.debug("git ls-remote -t --refs --sort=-v:refname {}".format(parameters[2]))
                 p = subprocess.Popen(['git', 'ls-remote', '-t', '--refs', "--sort=-v:refname", parameters[2]], stdout=subprocess.PIPE,
@@ -51,7 +37,9 @@ class GetRepoInfo:
                     remote_revisions_list = re.split('\s', result.decode('utf-8'))
                     remote_revisions_list.pop()
                     remote_revisions.extend(remote_revisions_list)
-                
+                    log.debug("Ohter revisions")
+                    log.debug(remote_revisions)
+
                 
             except Exception as e:
                 print(e)
@@ -206,7 +194,3 @@ class GetRepoInfo:
             log.error(e)
             rel_createdOn = ""
         return rel_createdOn
-
-
-GetRepoInfo.getReleaseVersion("git clone https://github.com/facebook/hhvm hhvm_facebook")
-

@@ -28,16 +28,19 @@ def get_release_info(item, current_path, progress_status):
     #     # item['license'] = {"key": "UnKnown", "name": "UnKnown", "spdx_id": "UnKnown", "url": "", "node_id": ""}
     # else:
     #     result = get_source_code_with_release_info(item, current_path, progress_status)
-    if item['license'] is None:
-        log.warning("{}[{}] do not have license information....".format(item["name"], item['full_name']))
-        item['license'] = {
-            "key": "",
-            "name": 'UnKnown',
-            "spdx_id": "",
-            "url": "",
-            "node_id": ""
-            }
-    result = get_source_code_with_release_info(item, current_path, progress_status)
+    try:
+        if item['license'] is None:
+            log.warning("{}[{}] do not have license information....".format(item["name"], item['full_name']))
+            item['license'] = {
+                "key": "",
+                "name": 'UnKnown',
+                "spdx_id": "",
+                "url": "",
+                "node_id": ""
+                }
+        result = get_source_code_with_release_info(item, current_path, progress_status)
+    except Exception as e:
+        log.error(str(e))
     return result
 
 def get_source_code_with_release_info(item, current_path, progress_status):

@@ -29,7 +29,7 @@ log = logging.getLogger(__name__) # getLogger(filename="github_crawler.log")
 
 
 def isUsableVersion(version, project_name, default_branch = None):
-    patternString = '^refs\/(tags|heads)\/(v|ver|version|master|main'
+    patternString = '^refs\/(tags|heads)\/([0-9]{1,}|v|ver|version|master|main'
 
     if (default_branch or None):
         patternString = patternString + "|" + default_branch
@@ -38,7 +38,7 @@ def isUsableVersion(version, project_name, default_branch = None):
         patternString = patternString + "|" + project_name
 
     patternString = patternString + ")"
-
+    
     partten = re.compile(patternString, re.IGNORECASE)
     return partten.search(version)
 
@@ -76,10 +76,19 @@ def git_clone(crawlingInfo, clone_url, git_id, pid, current_path, current_status
 
     # (git_hash, revision_name)형태 배열 재구성
     revision_list = list(zip(remote_repo_revision[0::2], remote_repo_revision[1::2]))
+    log.info("Before revision_version")
+    log.info(revision_list)
 
     # master를 포함한 최신 tag 10개만 추출
-    revision_list = [ x for x in revision_list if isUsableVersion(x[1], crawlingInfo.projectName) ][0:10]
-
+    fileter_revision_list = [ x for x in revision_list if isUsableVersion(version = x[1], project_name = crawlingInfo.projectName) ][0:10]
+    if (len(fileter_revision_list) <= 1):
+        revision_list = revision_list[0:10]
+    else:
+        revision_list = fileter_revision_list
+        
+    log.info("After revision_version")
+    log.info(revision_list)
+    downresult = 0
     for rev in revision_list:
         os.chdir(current_path) # move project directory
 
