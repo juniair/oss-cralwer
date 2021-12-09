@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from common import getenv
 from base_db import CrawlerDB
 from logger import getLogger
-
 load_dotenv()
 
 
@@ -160,8 +159,8 @@ class Clare:
 
         # dpa_release_tb 테이블의 마지막 release_id 값이 작으면 작업 내역이 없으므로 리턴 처리
         if last_release_id <= start_release_id:
-            log.debug("restart csv")
-            start_release_id = 1
+            log.info("indexing data not found.")
+            return False
 
         log.info(
             "indexing release_id {0} ~ {1}".format(
@@ -177,6 +176,7 @@ class Clare:
 
         try:
             while start_release_id < last_release_id:
+                is_added = False
                 # 시작할 release_id에서 100,000개 데이터 추출 데이터가
                 # last_release_id보다 큰 경우 처리하지 말 것
                 if (start_release_id + 100000) < last_release_id:
@@ -192,9 +192,6 @@ class Clare:
                 )
 
                 if csv_file_path is not None:
-                    # csv_file_size = os.stat(csv_file_path).st_size
-                    # if 0 < csv_file_size:
-
                     self.clare_add_processing(csv_file_path)
                     is_added = True
 
@@ -208,7 +205,6 @@ class Clare:
             is_complete = False
 
             # 예외 발생시 다음 시작 순서를 체크 하기 위
-            last_release_id = start_release_id - 1
             log.info(
                 "[clare - run] running stop. restart release_id({0}) changed. ".format(
                     start_release_id
@@ -218,8 +214,8 @@ class Clare:
         if is_complete or is_added:
             is_complete = self.index()
 
-        last_release_id = last_release_id + 1
         if is_complete:
+            last_release_id = last_release_id + 1
             # Step 6. Clare add 작업이 끝나면 다음 시작할 release_id 기록
             write_release_id(file_full_path, last_release_id)
 
