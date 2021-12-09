@@ -92,6 +92,7 @@ def remove_added_project(csv_file):
             else:
                 os.remove(file_dir)
                 log.info("[%s] remove." % file_dir)
+    # os.remove(csv_file)
 
 
 BATCH_LOG_PATH = getenv(
