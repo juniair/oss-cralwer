@@ -3,6 +3,7 @@
 """
 크롤링 데이터를 clare에서 add와 index 작업을 위한 클래스 정의
 """
+import csv
 import os
 import sys
 import traceback
@@ -68,6 +69,29 @@ def try_make_file(filePath=".", fileName="check_list.txt"):
         if not os.path.isfile(file_full_path):
             os.remove(file_full_path)
         return False
+
+
+"""
+csv 파일에서 작업이 된  파일 제거
+"""
+
+
+def remove_added_project(csv_file):
+    added_project_info = {}
+
+    with open(csv_file, 'r') as f:
+        reader = csv.reader(f)
+
+        for _, file_dir in reader:  # <- "for release_id, file_dir in reader"
+
+            # added_project_info[release_id] = file_dir
+            if not os.path.isdir(file_dir):
+                log.info("[%s] is not found. because it is removed." %
+                         file_dir)
+                continue
+            else:
+                os.remove(file_dir)
+                log.info("[%s] remove." % file_dir)
 
 
 BATCH_LOG_PATH = getenv(
@@ -195,7 +219,11 @@ class Clare:
                     self.clare_add_processing(csv_file_path)
                     is_added = True
 
-                # 다음 release_id를 시작점으로 변경
+                if is_added:
+                    # TODO: ADD 한 프로젝트 삭제
+                    # CSV 파일 읽어서 삭제
+                    remove_added_project(csv_file=csv_file_path)
+                    # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id
                 time.sleep(60)
                 is_complete = True
