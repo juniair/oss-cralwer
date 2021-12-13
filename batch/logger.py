@@ -13,7 +13,7 @@ formatter = logging.Formatter("[%(asctime)s][%(levelname)s] - %(message)s")
 
 
 # Logger -> Singleton.
-def getLogger(filename="logging.txt", log_file_path="."):
+def getLogger(filename="logging.log", log_file_path="."):
     LOG_FILENAME = "{}/{}".format(log_file_path, filename)
     streamHandler = logging.StreamHandler()
     fileMaxByte = 1024 * 1024 * 1024
