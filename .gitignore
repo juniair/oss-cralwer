@@ -16,3 +16,4 @@ codebase/
 *.pid
 history/**
 batch/history/
+*.out
