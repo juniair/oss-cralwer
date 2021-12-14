@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import csv
+import shutil
 from utils.logger import log
 
 
@@ -84,6 +85,6 @@ def remove_added_project(csv_file):
                          file_dir)
                 continue
             else:
-                os.remove(file_dir)
+                shutil.rmtree(file_dir)
                 log.info("[%s] remove." % file_dir)
     # os.remove(csv_file)
