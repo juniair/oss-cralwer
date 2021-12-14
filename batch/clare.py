@@ -111,10 +111,12 @@ class Clare:
             crawler_db.execute(query)
             result = crawler_db.fetchall()
             ppid = result[0].p
-
-            last_release_id = int(ppid)
-
-            release_id_range[1] = last_release_id
+            if ppid is None:
+                log.info("Do not new crawlering project.")
+                return False
+            else:
+                last_release_id = int(ppid)
+                release_id_range[1] = last_release_id
 
         # dpa_release_tb 테이블의 마지막 release_id 값이 작으면 작업 내역이 없으므로 리턴 처리
         if last_release_id <= start_release_id:
@@ -199,49 +201,87 @@ class Clare:
     def clare_add_processing(self, file_full_path):
 
         p = None
-        args = [
-            "java",
-            "-jar",
-            CLARE_JAR,
-            "add",
-            "-csv",
-            file_full_path,
-            "-initdb",
-            "-codebase",
-            CODE_BASE_PATH,
-            "-v"
-        ]
-        log.info(
-            "[clare command] : {0}".format(
-                " ".join([str(elem) for elem in args]))
-        )
-        (p, error) = subprocess.Popen(args, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE).communicate()
 
-        return (p, error)
+        log_path = getenv(
+            "CLARE_LOG_PATH",
+            "/HDD2/alice_project/alice_crawler/batch/log/clare",
+            is_debug=self.debug,
+        )
+
+        try_make_dir(log_path)
+
+        log_file_name = getenv(
+            "CLARE_ADD_LOG_NAME", "clare_add.log", is_debug=self.debug
+        )
+
+        log_file_path = log_path + os.sep + log_file_name
+        with open(log_file_path, "a") as f:
+            clare_jar = getenv(
+                "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
+            )
+            code_base_path = getenv(
+                "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebase"
+            )
+
+            args = [
+                "java",
+                "-jar",
+                clare_jar,
+                "add",
+                "-csv",
+                file_full_path,
+                "-initdb",
+                "-codebase",
+                code_base_path,
+            ]
+            log.info(
+                "[clare command] {0}".format(
+                    " ".join([str(elem) for elem in args]))
+            )
+            p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
+
+        return p
 
     def clare_index_processing(self):
 
         p = None
 
-        args = [
-            "java",
-            "-jar",
-            CLARE_JAR,
-            "index",
-            "-initdb",
-            "-codebase",
-            CODE_BASE_PATH,
-            "-v"
-        ]
-
-        log.info(
-            "[clare command] {0}".format(
-                " ".join([str(elem) for elem in args]))
+        log_path = getenv(
+            "CLARE_LOG_PATH",
+            "/HDD2/alice_project/alice_crawler/batch/log/clare",
+            is_debug=self.debug,
         )
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE).communicate()
+        try_make_dir(log_path)
+
+        log_file_name = getenv(
+            "CLARE_INDEX_LOG_NAME", "clare_index.log", is_debug=self.debug
+        )
+        log_file_path = log_path + os.sep + log_file_name
+        with open(log_file_path, "a") as f:
+            clare_jar = getenv(
+                "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
+            )
+            code_base_path = getenv(
+                "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebse"
+            )
+
+            args = [
+                "java",
+                "-jar",
+                clare_jar,
+                "index",
+                "-initdb",
+                "-codebase",
+                code_base_path,
+            ]
+
+            log.info(
+                "[clare command] {0}".format(
+                    " ".join([str(elem) for elem in args]))
+            )
+
+            p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
 
         return p
 
