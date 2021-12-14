@@ -3,7 +3,10 @@
 """
 크롤링 데이터를 clare에서 add와 index 작업을 위한 클래스 정의
 """
-import csv
+# custom modules
+from utils.FileHelper import *
+from db.base_db import CrawlerDB
+
 import os
 import sys
 import traceback
@@ -11,37 +14,8 @@ import subprocess
 from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
-from common import getenv
-from db.base_db import CrawlerDB
-from logger import getLogger
-load_dotenv()
-
-
-
-
-
-"""
-csv 파일에서 작업이 된  파일 제거
-"""
-
-
-def remove_added_project(csv_file):
-    added_project_info = {}
-
-    with open(csv_file, 'r') as f:
-        reader = csv.reader(f)
-
-        for _, file_dir in reader:  # <- "for release_id, file_dir in reader"
-
-            # added_project_info[release_id] = file_dir
-            if not os.path.isdir(file_dir):
-                log.info("[%s] is not found. because it is removed." %
-                         file_dir)
-                continue
-            else:
-                os.remove(file_dir)
-                log.info("[%s] remove." % file_dir)
-    # os.remove(csv_file)
+from utils.common import getenv
+from utils.logger import getLogger
 
 
 # 배치 로그 경로
@@ -177,7 +151,7 @@ class Clare:
                 )
 
                 if csv_file_path is not None:
-                    self.clare_add_processing(csv_file_path)
+                    t = self.clare_add_processing(csv_file_path)
                     is_added = True
 
                 if is_added:
@@ -241,10 +215,10 @@ class Clare:
             "[clare command] : {0}".format(
                 " ".join([str(elem) for elem in args]))
         )
-        p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE).communicate()
+        (p, error) = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE).communicate()
 
-        return p
+        return (p, error)
 
     def clare_index_processing(self):
 
@@ -359,7 +333,7 @@ if __name__ == "__main__":
             Invalid release_id arguments.
             Usage: python main.py <start_release_id> <last_release_id>
             """
-            raise ValueError()
+            raise ValueError(error_msg)
     except Exception as e:
         print(e)
         traceback.print_exc()

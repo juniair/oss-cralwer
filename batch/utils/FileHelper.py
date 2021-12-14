@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
+import csv
+from utils.logger import log
 
 
 def write_release_id(file_full_path, release_id=1):
-    print("write release_id({})\n".format(release_id))
+    log.debug("write release_id({})\n".format(release_id))
     with open(file_full_path, "a") as f:
         f.write("%s\n" % release_id)
 
@@ -15,18 +17,25 @@ def read_last_release_id(file_full_path):
             last_line = line
     return last_line
 
+# - description : 디렉토리 생성 시도 함수
+# - parameters
+#   * dirPath : 디렉토리 경로
+# - return
+#   * True : 이미 디렉토리가 존재하거나, 디렉토리 생성에 성공
+#   * False :  생성 도중 문제가 발생
+
 
 def try_make_dir(dirPath=None):
     try:
         if not os.path.isdir(dirPath):
-            print(
+            log.warning(
                 "[try_make_dir] '{0}' is not exist. create '{0}'.".format(
                     dirPath)
             )
             os.makedirs(dirPath)
         return True
     except Exception as e:
-        print("Error creating %s " % e.__repr__())
+        log.error("Error creating %s " % e.__repr__())
         return False
 
 
@@ -40,9 +49,9 @@ def try_make_dir(dirPath=None):
 def try_make_file(filePath=".", fileName="check_list.txt"):
     try:
         file_full_path = filePath + os.sep + fileName
-        print("[try_make_file] - {0} checking.".format(file_full_path))
+        log.debug("[try_make_file] - {0} checking.".format(file_full_path))
         if not os.path.isfile(file_full_path):
-            print(
+            log.warning(
                 "[try_make_file] '{0}' is not exist. create '{0}'.".format(
                     file_full_path
                 )
@@ -50,7 +59,31 @@ def try_make_file(filePath=".", fileName="check_list.txt"):
             write_release_id(file_full_path)
         return True
     except Exception as e:
-        print("[try_make_file] - {0}".format(e))
+        log.error("[try_make_file] - {0}".format(e))
         if not os.path.isfile(file_full_path):
             os.remove(file_full_path)
         return False
+
+
+"""
+csv 파일에서 작업이 된  파일 제거
+"""
+
+
+def remove_added_project(csv_file):
+    added_project_info = {}
+
+    with open(csv_file, 'r') as f:
+        reader = csv.reader(f)
+
+        for _, file_dir in reader:  # <- "for release_id, file_dir in reader"
+
+            # added_project_info[release_id] = file_dir
+            if not os.path.isdir(file_dir):
+                log.info("[%s] is not found. because it is removed." %
+                         file_dir)
+                continue
+            else:
+                os.remove(file_dir)
+                log.info("[%s] remove." % file_dir)
+    # os.remove(csv_file)

@@ -2,7 +2,7 @@
 
 import psycopg2
 import psycopg2.extras
-from common import getenv
+from utils.common import getenv
 
 
 class BaseDB(object):
