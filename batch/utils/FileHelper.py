@@ -47,17 +47,17 @@ def try_make_dir(dirPath=None):
 # - return
 #   * True : 이미 파일이 존재하거나, 파일 생성에 성공
 #   * False :  생성 도중 문제가 발생
-def try_make_file(filePath=".", fileName="check_list.txt"):
+def try_make_file(filePath=".", fileName="check_list.txt", release_id=1):
     try:
         file_full_path = filePath + os.sep + fileName
         log.debug("[try_make_file] - {0} checking.".format(file_full_path))
         if not os.path.isfile(file_full_path):
             log.warning(
                 "[try_make_file] '{0}' is not exist. create '{0}'.".format(
-                    file_full_path
+                    file_full_path,
                 )
             )
-            write_release_id(file_full_path)
+            write_release_id(file_full_path, release_id)
         return True
     except Exception as e:
         log.error("[try_make_file] - {0}".format(e))
@@ -66,11 +66,17 @@ def try_make_file(filePath=".", fileName="check_list.txt"):
         return False
 
 
+def is_file(dir_path, file_path):
+    '''
+    /etc/clare/codebase 아래에 소스 코드 위치
+    '''
+    filename = "{}/{}".format(dir_path, file_path)
+    print("is_file:", filename)
+    return os.path.isfile(filename)
+
 """
 csv 파일에서 작업이 된  파일 제거
 """
-
-
 def remove_added_project(csv_file):
     added_project_info = {}
 
