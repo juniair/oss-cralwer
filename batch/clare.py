@@ -14,24 +14,11 @@ import subprocess
 from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
-from utils.common import getenv
+from utils.common import *
 from utils.logger import getLogger
 
 
-# 배치 로그 경로
-BATCH_LOG_PATH = getenv(
-    "BATCH_LOG_PATH", "/HDD2/alice_project/alice_crawler/batch/log/batch"
-)
 
-# clare 엔진 경로
-CLARE_JAR = getenv(
-    "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
-)
-
-# codebase 경로
-CODE_BASE_PATH = getenv(
-    "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebse"
-)
 
 log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
 
