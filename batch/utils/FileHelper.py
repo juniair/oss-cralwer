@@ -40,6 +40,15 @@ def try_make_dir(dirPath=None):
         return False
 
 
+def make_file_path(unit_id):
+    str_unit_id = str(unit_id)
+    len_unit_id = len(str_unit_id)
+    if len_unit_id - 3 <= 0:
+        return "%04d" % int(unit_id)
+    front_path = str_unit_id[-3:]
+    back_path = make_file_path(str_unit_id[:len_unit_id-3])
+    return "{}/{}".format(front_path, back_path)
+
 # - description : 파일 생성 시도 함수
 # - parameters
 #   * filePath : 파일 경로
