@@ -38,9 +38,9 @@ class IndexRepository:
     sql = """
       SELECT * 
         FROM piu_index_file_tb 
-    ORDER BY file_id DESC
-       LIMIT %s
-      OFFSET %s""" % (size, start)
+       WHERE file_id > %s
+    ORDER BY file_id
+       LIMIT %s""" % (start, size)
     self.__logger.info(sql)
     self.__db.execute(sql)
     result = self.__db.fetchall()
@@ -48,7 +48,7 @@ class IndexRepository:
 
   def get_file_infos(self, file_id):
     sql = "select * from piu_index_file_infos_tb where file_id = %s"
-    self.__logger.debug("check file_infos... file_id=", file_id)
+    self.__logger.debug("check file_infos... file_id={}".format(file_id))
     self.__db.execute(sql, (file_id,))
     return self.__db.fetchall()
 
@@ -57,11 +57,26 @@ class IndexRepository:
     테스트 : piu_index_file_infos_test
     라이브 : piu_index_file_infos_tb
     '''
-    sql = '''INSERT INTO 
-        piu_index_file_infos_tb(file_id, project_name, project_license_id, project_url, project_ver, file_license_id, create_dt, update_dt)
-        VALUES(%s, %s, %s, %s, %s, %s, now(), now())
-        ON CONFLICT (file_id)
-        DO UPDATE SET
+    sql = '''
+    INSERT INTO piu_index_file_infos_tb
+               (file_id
+               ,project_name
+               ,project_license_id
+               ,project_url
+               ,project_ver
+               ,file_license_id
+               ,create_dt
+               ,update_dt)
+        VALUES(%s
+              ,%s
+              ,%s
+              ,%s
+              ,%s
+              ,%s
+              ,now()
+              ,now())
+   ON CONFLICT (file_id)
+   DO UPDATE SET
             (project_license_id, file_license_id, project_ver, update_dt) 
             = (EXCLUDED.project_license_id, EXCLUDED.file_license_id, EXCLUDED.project_ver, EXCLUDED.update_dt) ;
     '''

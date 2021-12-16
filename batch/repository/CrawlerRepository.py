@@ -22,8 +22,12 @@ class CrawlerRepository:
 
 
   def get_release_info(self, release_id):
-    sql = "select * from dpa_crawler_release_tb where release_id = %s"
-    self.__logger.debug("check release_infos... release_id=", release_id)
+    self.__logger.info("check release_infos... release_id={}".format(release_id))
+    sql = """
+    SELECT * 
+      FROM dpa_crawler_release_tb 
+     WHERE release_id = %s"""
+    self.__logger.debug(sql % release_id)
     self.__db.execute(sql, (release_id,))
     data = self.__db.fetchall()
     return data[0] if len(data) > 0 else None

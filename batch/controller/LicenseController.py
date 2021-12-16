@@ -54,7 +54,7 @@ class LicenseController():
     self.__crawlerRepository = CrawlerRepository(logger=self.__logger)
     self.__indexRepository = IndexRepository(logger=self.__logger)
     self.__licenseRepository = LicenseRepository(logger=self.__logger)
-    
+    logger.log = self.__logger
     history_path = common.getenv("HISTORY_PATH", "/HDD2/alice_project/alice_crawler/batch/history")
 
     FileHelper.try_make_dir(dirPath=history_path)
@@ -179,13 +179,16 @@ class LicenseController():
                           release_info.release_ver,
                           file_license_id
                       )
+          else:
+            self.__logger.info("{}/{} is not found.".format(common.CODE_BASE_PATH, file_path))
+        start_page += 1
       except Exception as e:
         self.__logger.error(e)
         raise LicenseUpdateError(e.__str__(), start_page)
           
         
 
-      start_page += 1
+      
 
     return start_page  
 
