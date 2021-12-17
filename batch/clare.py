@@ -3,10 +3,6 @@
 """
 크롤링 데이터를 clare에서 add와 index 작업을 위한 클래스 정의
 """
-# custom modules
-from utils.FileHelper import *
-from db.base_db import CrawlerDB
-
 import os
 import sys
 import traceback
@@ -14,14 +10,18 @@ import subprocess
 from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
-from utils.common import *
+
+
+# custom modules
+from db.base_db import CrawlerDB
+from utils import FileHelper, common, logger as loggerFactory
 from utils.logger import getLogger
 from repository import IndexRepository, CrawlerRepository
 
 
+FileHelper.try_make_dir(common.BATCH_LOG_PATH)
 
-
-log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
+log = loggerFactory.getLogger(filename="batch.log", log_file_path=common.BATCH_LOG_PATH)
 
 
 class Clare:
@@ -30,7 +30,7 @@ class Clare:
         self.__crawlerRepository = CrawlerRepository()
         self.debug = debug
 
-        self.CSV_DOWNLOAD_PATH = getenv(
+        self.CSV_DOWNLOAD_PATH = common.getenv(
             "DOWNLOAD_PATH", "/HDD2/alice_project/alice_crawler/batch/csv", self.debug
         )
 
@@ -38,9 +38,9 @@ class Clare:
             "[init] csv diretory checking. path : {0}".format(
                 self.CSV_DOWNLOAD_PATH)
         )
-        try_make_dir(self.CSV_DOWNLOAD_PATH)
+        FileHelper.try_make_dir(self.CSV_DOWNLOAD_PATH)
 
-        self.HISTORY_PATH = getenv(
+        self.HISTORY_PATH = common.getenv(
             "HISTORY_PATH",
             "/HDD2/alice_project/alice_crawler/batch/history",
             self.debug,
@@ -50,9 +50,9 @@ class Clare:
             "[init] history diretory checking. path : {0}".format(
                 self.HISTORY_PATH)
         )
-        try_make_dir(self.HISTORY_PATH)
+        FileHelper.try_make_dir(self.HISTORY_PATH)
 
-        self.HISTORY_FILE_NAME = getenv(
+        self.HISTORY_FILE_NAME = common.getenv(
             "HISTORY_FILE_NAME", "check_list.txt", self.debug
         )
 
@@ -61,7 +61,7 @@ class Clare:
                 self.HISTORY_PATH + os.sep + self.HISTORY_FILE_NAME
             )
         )
-        try_make_file(filePath=self.HISTORY_PATH,
+        FileHelper.try_make_file(filePath=self.HISTORY_PATH,
                       fileName=self.HISTORY_FILE_NAME)
 
     def run(self, release_id_range=[None, None]):
@@ -81,7 +81,7 @@ class Clare:
         file_full_path = self.HISTORY_PATH + os.sep + self.HISTORY_FILE_NAME
         if start_release_id is None:
             log.debug("file path : {0}".format(file_full_path))
-            start_release_id = int(read_last_release_id(file_full_path))
+            start_release_id = int(FileHelper.read_last_release_id(file_full_path))
             release_id_range[0] = start_release_id
 
         # Step 3. DB에서 마지막 release_id 값 불러옴
@@ -149,7 +149,7 @@ class Clare:
                 if is_added:
                     # TODO: ADD 한 프로젝트 삭제
                     # CSV 파일 읽어서 삭제
-                    remove_added_project(csv_file=csv_file_path)
+                    FileHelper.remove_added_project(csv_file=csv_file_path)
                     # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id
                 time.sleep(60)
@@ -172,7 +172,7 @@ class Clare:
         if is_complete:
             last_release_id = last_release_id + 1
             # Step 6. Clare add 작업이 끝나면 다음 시작할 release_id 기록
-            write_release_id(file_full_path, last_release_id)
+            FileHelper.write_release_id(file_full_path, last_release_id)
 
         crawler_db.close()
         return is_complete
@@ -192,24 +192,24 @@ class Clare:
 
         p = None
 
-        log_path = getenv(
+        log_path = common.getenv(
             "CLARE_LOG_PATH",
             "/HDD2/alice_project/alice_crawler/batch/log/clare",
             is_debug=self.debug,
         )
 
-        try_make_dir(log_path)
+        FileHelper.try_make_dir(log_path)
 
-        log_file_name = getenv(
+        log_file_name = common.getenv(
             "CLARE_ADD_LOG_NAME", "clare_add.log", is_debug=self.debug
         )
 
         log_file_path = log_path + os.sep + log_file_name
         with open(log_file_path, "a") as f:
-            clare_jar = getenv(
+            clare_jar = common.getenv(
                 "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
             )
-            code_base_path = getenv(
+            code_base_path = common.getenv(
                 "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebase"
             )
 
@@ -236,23 +236,23 @@ class Clare:
 
         p = None
 
-        log_path = getenv(
+        log_path = common.getenv(
             "CLARE_LOG_PATH",
             "/HDD2/alice_project/alice_crawler/batch/log/clare",
             is_debug=self.debug,
         )
 
-        try_make_dir(log_path)
+        FileHelper.try_make_dir(log_path)
 
-        log_file_name = getenv(
+        log_file_name = common.getenv(
             "CLARE_INDEX_LOG_NAME", "clare_index.log", is_debug=self.debug
         )
         log_file_path = log_path + os.sep + log_file_name
         with open(log_file_path, "a") as f:
-            clare_jar = getenv(
+            clare_jar = common.getenv(
                 "CLARE_FILE_NAME", "/HDD2/alice_project/alice_crawler/Clare-1.0.jar"
             )
-            code_base_path = getenv(
+            code_base_path = common.getenv(
                 "CLEAR_CODE_BASE_DIR", "/HDD2/alice_project/codebse"
             )
 
