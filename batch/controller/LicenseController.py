@@ -67,7 +67,7 @@ class LicenseController():
         signal(sig, self.handler)
 
   def handler(self, signum, frame):
-      self.__logger.info("signum=", signum)
+      self.__logger.info("signum={}".format(signum))
       sys.exit(0)
 
 
