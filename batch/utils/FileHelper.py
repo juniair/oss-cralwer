@@ -80,7 +80,7 @@ def is_file(dir_path, file_path):
     /etc/clare/codebase 아래에 소스 코드 위치
     '''
     filename = "{}/{}".format(dir_path, file_path)
-    log.info("is_file:", filename)
+    log.info("is_file: {}".format(filename)))
     return os.path.isfile(filename)
 
 """
