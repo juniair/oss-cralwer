@@ -9,7 +9,7 @@ urllib3_logger.setLevel(logging.CRITICAL)
 log = logging.getLogger(__name__)
 # log.setLevel(logging.INFO)
 log.setLevel(logging.DEBUG)
-formatter = logging.Formatter("[%(asctime)s][%(levelname)s] - %(message)s")
+formatter = logging.Formatter("[%(asctime)s][%(levelname)s] - [%(module)s].[%(funcName)s(line: %(lineno)d)] > %(message)s")
 
 
 # Logger -> Singleton.
