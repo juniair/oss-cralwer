@@ -45,7 +45,7 @@ from utils.exception.Error import LicenseUpdateError
 #     signal(sig, handler)
 
 
-
+FileHelper.try_make_dir(common.BATCH_LOG_PATH)
 
 
 class LicenseController():
