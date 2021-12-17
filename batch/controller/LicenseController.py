@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import datetime
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
@@ -62,6 +63,12 @@ class LicenseController():
     history_file_name = common.getenv("HISTORY_INDEX_FILE_NAME", "update_index_file.txt")
     self.__history_full_path = ("%s/%s" %  (history_path, history_file_name))
     FileHelper.try_make_file(filePath=history_path, fileName=history_file_name, release_id=1055154469)
+    for sig in (SIGABRT, SIGFPE, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+        signal(sig, self.handler)
+
+  def handler(self, signum, frame):
+      self.__logger.info("signum=", signum)
+      sys.exit(0)
 
 
   def updated_file_license(self, start_file_id: int = None, end_file_id: int = None):

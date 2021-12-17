@@ -16,6 +16,7 @@ import time
 from datetime import datetime, timedelta
 from utils.common import *
 from utils.logger import getLogger
+from repository import IndexRepository, CrawlerRepository
 
 
 
@@ -25,6 +26,8 @@ log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
 
 class Clare:
     def __init__(self, debug=False):
+        self.__indexRepository = IndexRepository()
+        self.__crawlerRepository = CrawlerRepository()
         self.debug = debug
 
         self.CSV_DOWNLOAD_PATH = getenv(
