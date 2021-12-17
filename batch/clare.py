@@ -3,6 +3,10 @@
 """
 크롤링 데이터를 clare에서 add와 index 작업을 위한 클래스 정의
 """
+# custom modules
+from utils.FileHelper import *
+from db.base_db import CrawlerDB
+
 import os
 import sys
 import traceback
@@ -10,70 +14,11 @@ import subprocess
 from dotenv import load_dotenv
 import time
 from datetime import datetime, timedelta
-from common import getenv
-from base_db import CrawlerDB
-from logger import getLogger
-
-load_dotenv()
+from utils.common import *
+from utils.logger import getLogger
 
 
-def write_release_id(file_full_path, release_id=1):
-    print("write release_id({})\n".format(release_id))
-    with open(file_full_path, "a") as f:
-        f.write("%s\n" % release_id)
 
-
-def read_last_release_id(file_full_path):
-    last_line = None
-    with open(file_full_path, "r") as f:
-        for line in f.readlines():
-            last_line = line
-    return last_line
-
-
-def try_make_dir(dirPath=None):
-    try:
-        if not os.path.isdir(dirPath):
-            log.warning(
-                "[try_make_dir] '{0}' is not exist. create '{0}'.".format(
-                    dirPath)
-            )
-            os.makedirs(dirPath)
-        return True
-    except Exception as e:
-        log.error(str(e))
-        return False
-
-
-# - description : 파일 생성 시도 함수
-# - parameters
-#   * filePath : 파일 경로
-#   * fileName : 파일명(기본값 : check_list.txt)
-# - return
-#   * True : 이미 파일이 존재하거나, 파일 생성에 성공
-#   * False :  생성 도중 문제가 발생
-def try_make_file(filePath=".", fileName="check_list.txt"):
-    try:
-        file_full_path = filePath + os.sep + fileName
-        log.debug("[try_make_file] - {0} checking.".format(file_full_path))
-        if not os.path.isfile(file_full_path):
-            log.warning(
-                "[try_make_file] '{0}' is not exist. create '{0}'.".format(
-                    file_full_path
-                )
-            )
-            write_release_id(file_full_path)
-        return True
-    except Exception as e:
-        log.error("[try_make_file] - {0}".format(e))
-        if not os.path.isfile(file_full_path):
-            os.remove(file_full_path)
-        return False
-
-
-BATCH_LOG_PATH = getenv(
-    "BATCH_LOG_PATH", "/HDD2/alice_project/alice_crawler/batch/log/batch"
-)
 
 log = getLogger(filename="batch.log", log_file_path=BATCH_LOG_PATH)
 
@@ -153,15 +98,17 @@ class Clare:
             crawler_db.execute(query)
             result = crawler_db.fetchall()
             ppid = result[0].p
-
-            last_release_id = int(ppid)
-
-            release_id_range[1] = last_release_id
+            if ppid is None:
+                log.info("Do not new crawlering project.")
+                return False
+            else:
+                last_release_id = int(ppid)
+                release_id_range[1] = last_release_id
 
         # dpa_release_tb 테이블의 마지막 release_id 값이 작으면 작업 내역이 없으므로 리턴 처리
         if last_release_id <= start_release_id:
-            log.debug("restart csv")
-            start_release_id = 1
+            log.info("indexing data not found.")
+            return False
 
         log.info(
             "indexing release_id {0} ~ {1}".format(
@@ -177,6 +124,7 @@ class Clare:
 
         try:
             while start_release_id < last_release_id:
+                is_added = False
                 # 시작할 release_id에서 100,000개 데이터 추출 데이터가
                 # last_release_id보다 큰 경우 처리하지 말 것
                 if (start_release_id + 100000) < last_release_id:
@@ -192,13 +140,14 @@ class Clare:
                 )
 
                 if csv_file_path is not None:
-                    # csv_file_size = os.stat(csv_file_path).st_size
-                    # if 0 < csv_file_size:
-
-                    self.clare_add_processing(csv_file_path)
+                    t = self.clare_add_processing(csv_file_path)
                     is_added = True
 
-                # 다음 release_id를 시작점으로 변경
+                if is_added:
+                    # TODO: ADD 한 프로젝트 삭제
+                    # CSV 파일 읽어서 삭제
+                    remove_added_project(csv_file=csv_file_path)
+                    # 다음 release_id를 시작점으로 변경
                 start_release_id = end_release_id
                 time.sleep(60)
                 is_complete = True
@@ -208,7 +157,6 @@ class Clare:
             is_complete = False
 
             # 예외 발생시 다음 시작 순서를 체크 하기 위
-            last_release_id = start_release_id - 1
             log.info(
                 "[clare - run] running stop. restart release_id({0}) changed. ".format(
                     start_release_id
@@ -218,8 +166,8 @@ class Clare:
         if is_complete or is_added:
             is_complete = self.index()
 
-        last_release_id = last_release_id + 1
         if is_complete:
+            last_release_id = last_release_id + 1
             # Step 6. Clare add 작업이 끝나면 다음 시작할 release_id 기록
             write_release_id(file_full_path, last_release_id)
 
@@ -412,7 +360,7 @@ if __name__ == "__main__":
             Invalid release_id arguments.
             Usage: python main.py <start_release_id> <last_release_id>
             """
-            raise ValueError()
+            raise ValueError(error_msg)
     except Exception as e:
         print(e)
         traceback.print_exc()
