@@ -6,7 +6,6 @@ from utils.logger import log
 
 
 def write_release_id(file_full_path, release_id=1):
-    log.debug("write release_id({})\n".format(release_id))
     with open(file_full_path, "a") as f:
         f.write("%s\n" % release_id)
 
@@ -74,6 +73,8 @@ def try_make_file(filePath=".", fileName="check_list.txt", release_id=1):
             os.remove(file_full_path)
         return False
 
+def has_dir(path):
+    return os.path.isdir(path)
 
 def is_file(dir_path, file_path):
     '''
@@ -83,10 +84,13 @@ def is_file(dir_path, file_path):
     log.info("is_file: {}".format(filename))
     return os.path.isfile(filename)
 
+def remove_added_project(file_dir):
+    shutil.rmtree(file_dir)
+
 """
 csv 파일에서 작업이 된  파일 제거
 """
-def remove_added_project(csv_file):
+def remove_added_project_with_csv(csv_file):
     added_project_info = {}
 
     with open(csv_file, 'r') as f:
@@ -100,6 +104,6 @@ def remove_added_project(csv_file):
                          file_dir)
                 continue
             else:
-                shutil.rmtree(file_dir)
+                remove_added_project(file_dir)
                 log.info("[%s] remove." % file_dir)
     # os.remove(csv_file)
