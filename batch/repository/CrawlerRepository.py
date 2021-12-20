@@ -38,6 +38,24 @@ class CrawlerRepository:
     self.__db.execute(sql, (pid,))
     data = self.__db.fetchall()
     return data[0] if len(data) > 0 else None
+  
+  def get_max_release_id(self, release_id):
+
+    # - 조건을 넣으면 쿼리 속도가 빨라지나?
+    query = """
+            SELECT MAX(release_id) as p
+              FROM dpa_crawler_release_tb
+             WHERE %s <= release_id
+               AND file_dir IS NOT NULL
+            """
+    query = query % release_id
+    self.__logger.debug(query)
+
+    self.__db.execute(query)
+    result = self.__db.fetchall()
+    return result[0].p
+
+
 
 
 
