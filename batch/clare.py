@@ -161,7 +161,7 @@ class Clare:
                     common.CLARE_JAR,
                     "add",
                     "-release_id",
-                    release_id,
+                    str(release_id),
                     "-initdb",
                     "-codebase",
                     common.CODE_BASE_PATH,
@@ -172,9 +172,11 @@ class Clare:
                     FileHelper.remove_added_project(data.file_dir)
                 else:
                     raise Exception("clare add(release_id: {}) failed.".format(str(release_id)))
+                time.sleep(60)
             except Exception as e:
                 log.error(e)
                 return release_id
+            
 
         return last_release_id            
         
