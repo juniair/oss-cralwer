@@ -155,9 +155,12 @@ class Clare:
                 log_file_path = self.__clare_log_path + os.sep + self.__clare_add_log_name + "_{}.log".format(self.__clare_log_file_date)
                 if data is None:
                     log.info("{} is not found.".format(release_id))
+                    time.sleep(60)
                     continue
                 elif not FileHelper.has_dir(data.file_dir):
                     log.warning("({}) {} is not exists.".format(release_id, data.file_dir))
+                    time.sleep(60)
+                    continue
 
 
                 args = [
