@@ -264,12 +264,12 @@ class Clare:
 
         return is_complete
 
+
+    # clare.jar index 실행
     def __clare_index_processing(self):
 
         log_file_path = self.__clare_log_path + os.sep + self.__clare_index_log_name + "_{}.log".format(self.__clare_log_file_date)
-        with open(log_file_path, "a") as f:
-
-            args = [
+        args = [
                 "java",
                 "-jar",
                 common.CLARE_JAR,
@@ -280,19 +280,22 @@ class Clare:
                 "-v"
             ]
 
-            self.__logger.info("[clare command] {0}".format(" ".join([str(elem) for elem in args])))
-            try:
-                (result, err) = subprocess.Popen(args, stdout=f, stderr=f).communicate()
-            except Exception as e:
-                log.error(e)
+        self.__logger.info("[clare command] {0}".format(" ".join([str(elem) for elem in args])))
+        try:
+            (result, err) = self.__execute_engine(args, log_file_path)
+        except Exception as e:
+            log.error(e)
+
+            
     
     # clare 엔진 실행 함수
     def __execute_engine(self, args, log_path):
         p = None
+        err = None
         log.info("[clare command] {0}".format(" ".join([str(elem) for elem in args])))
         with open(log_path, "a") as f:
-            p = subprocess.Popen(args, stdout=f, stderr=f).communicate()
-        return p
+            (p, err) = subprocess.Popen(args, stdout=f, stderr=f).communicate()
+        return (p, err)
 
     # csv 추출 함수
     def __export_csv_file(
