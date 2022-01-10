@@ -145,6 +145,8 @@ class Clare:
 
     # release_id로 add 작업
     def __clare_add_for_release_id(self, start_release_id, last_release_id):
+
+        log.info("release_id range : {} ... {}".format(start_release_id, last_release_id))
         
         for release_id in range(start_release_id, last_release_id):
             try:
@@ -169,7 +171,10 @@ class Clare:
                 ]
                 (result, err) = self.__execute_engine(args, log_file_path)
                 if (err is None):
-                    FileHelper.remove_added_project(data.file_dir)
+                    if (data.file_dir is not None) and FileHelper.has_dir(data.file_dir):
+                        FileHelper.remove_added_project(data.file_dir)
+                    else:
+                        log.warning("{} is not exists.".format(data.file_dir))
                 else:
                     raise Exception("clare add(release_id: {}) failed.".format(str(release_id)))
                 time.sleep(60)
