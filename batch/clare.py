@@ -143,19 +143,6 @@ class Clare:
             self.__logger.error(e)
             return False
 
-        
-
-    def index(self):
-        is_complete = True
-        try:
-
-            self.__clare_index_processing()
-        except Exception as e:
-            log.error(e)
-            traceback.print_exc()
-            is_complete = False
-        return is_complete
-
     # release_id로 add 작업
     def __clare_add_for_release_id(self, start_release_id, last_release_id):
         
@@ -368,7 +355,21 @@ class Clare:
             log.info("Unable to extract csv.")
 
         return csv_file_path
+    
+    
+    def index(self):
+        is_complete = True
+        try:
+
+            self.__clare_index_processing()
+        except Exception as e:
+            log.error(e)
+            traceback.print_exc()
+            is_complete = False
+        return is_complete
     #} END METHODS
+
+
 
 
 if __name__ == "__main__":
