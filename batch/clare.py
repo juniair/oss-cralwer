@@ -132,7 +132,7 @@ class Clare:
                 self.__logger.info("running clare add.")
                 checkpoint_id = self.__clare_add_for_release_id(start_release_id, last_release_id)
                 log.debug("write release_id({})\n".format(checkpoint_id))
-                FileHelper.write_release_id(checkpoint_id)
+                FileHelper.write_release_id(self.__history_file_path, checkpoint_id)
                 self.__logger.info("running clare index.")
                 self.__clare_index_processing()
             else:
