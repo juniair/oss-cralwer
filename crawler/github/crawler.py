@@ -183,10 +183,11 @@ class GithubCrawler(Crawler):
             current_date = current.date()
 
             # 시작일은 크롤링 시작 기준 5년 전 부터(최신 5년으로 작업 시작)
-            start_date = current_date - relativedelta(year=5)
+            start_date = current_date - relativedelta(years=5)
+            start_date.replace(day=1)
             while start_date < current_date:
-                month_rage = calendar.monthrange(start_date.year, start_date.month)
-                end_date = start_date.replace(day=month_rage[1])
+                month_rnage = calendar.monthrange(start_date.year, start_date.month)
+                end_date = start_date.replace(day=month_rnage[1])
                 while True:
                     self.write_progress_log()
                     dictionary = self.search_project_page(gitkeyword, self.page, start_date, end_date)
