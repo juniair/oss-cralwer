@@ -61,6 +61,7 @@ def get_source_code_with_release_info(item, current_path, progress_status):
     
     log.debug("Download [ " + crawlerInfo.projectName + " ]")
     if item['clone_url'] is not None:
+        log.debug("URL : " + item['clone_url'])
         # DB 부분은 테스트로 제외
         # project 정보 체크하여 있다면 다운로드 받은 것으로 판단하고 pass
         pid = crawlerInfo.project_db_exists()

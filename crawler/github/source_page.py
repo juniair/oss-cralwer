@@ -44,6 +44,7 @@ def isUsableVersion(version, project_name, default_branch = None):
 
 @app.task(autoretry_for=(Exception,))
 def get_source_code(projectInfo, clone_url, git_id,  pid, current_path, progress_status):
+    lof.debug("source file info")
     log.debug(projectInfo)
     projectInfo.pop("projectUrlHash", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
     projectInfo.pop("hashing", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
