@@ -170,6 +170,7 @@ class Clare:
                     "add",
                     "-release_id",
                     str(release_id),
+                    data.file_dir,
                     "-initdb",
                     "-codebase",
                     common.CODE_BASE_PATH,
