@@ -178,6 +178,7 @@ class GithubCrawler(Crawler):
             # 언어별로 분리
             # 언어별로 분리해야 추후 관리하기 편할듯함
             current_path = initialPath + os.sep + gitkeyword
+            os.makedirs(current_path, exist_ok=True)
 
 
             current_date = current.date()
