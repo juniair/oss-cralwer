@@ -12,7 +12,8 @@ export CELERY_APP=worker.${target}.app
 echo $CELERY_APP
 echo start ${target2}_project_queue
 
-celery multi start worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue -c 3 --hostname=${target}.project@%h --logfile=/app/log/${target}/worker.${target}.project.log
+# celery multi start worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue -c 3 --hostname=${target}.project@%h --logfile=/app/log/${target}/worker.${target}.project.log
+celery multi start worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue -c 3 --hostname=${target}.project@%h --logfile=/app/log/${target}/worker.${target}.project.log --pidfile=/app/run/${target}/worker.${target}.project.pid
 
 
 echo start ${target2}_source_queue

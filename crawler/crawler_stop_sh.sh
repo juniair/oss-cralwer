@@ -25,7 +25,8 @@ celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${targ
 
 echo stop ${target2}_project_queue
 
-celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue --hostname=${target}.project@%h
+# celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue --hostname=${target}.project@%h
+celery multi stop worker.${target} --app=worker.${target}.app -l debug -Q ${target2}_project_queue --hostname=${target}.project@%h --pidfile=/app/run/${target}/worker.${target}.project.pid
 
 
 PID=`ps -eaf | grep main_${target}.py | grep -v grep | awk '{print $2}'` 
