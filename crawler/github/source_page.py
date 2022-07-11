@@ -44,16 +44,19 @@ def isUsableVersion(version, project_name, default_branch = None):
 
 @app.task(autoretry_for=(Exception,))
 def get_source_code(projectInfo, clone_url, git_id,  pid, current_path, progress_status):
-    log.debug("======================source file info==============================")
-    log.debug(projectInfo)
-    projectInfo.pop("projectUrlHash", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
-    projectInfo.pop("hashing", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
-    projectInfo.pop("nameMargin", None) # 클래스 생성자에 없는 파라미터 삭제
-    projectInfo.pop("pppid", None) # 클래스 생성자에 없는 파라미터 삭제
-    crawlingInfo = CrawlingInfo(**projectInfo)
+    try:
+        log.debug("======================source file info==============================")
+        log.debug(projectInfo)
+        projectInfo.pop("projectUrlHash", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
+        projectInfo.pop("hashing", None) # 클래스 생성자에서 만들어지는 멤버이기 때문에 삭제
+        projectInfo.pop("nameMargin", None) # 클래스 생성자에 없는 파라미터 삭제
+        projectInfo.pop("pppid", None) # 클래스 생성자에 없는 파라미터 삭제
+        crawlingInfo = CrawlingInfo(**projectInfo)
 
-    result = git_clone(crawlingInfo, clone_url, git_id, pid, current_path, progress_status) # item, remote_repo_revision
-    return result
+        result = git_clone(crawlingInfo, clone_url, git_id, pid, current_path, progress_status) # item, remote_repo_revision
+        return result
+    except Exception as e:
+        log.error(e)
 
 def git_clone(crawlingInfo, clone_url, git_id, pid, current_path, current_status):  # item, remote_repo_revision,
     # print("Clone URL : " + item['clone_url'])
